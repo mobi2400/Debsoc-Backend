@@ -12,6 +12,7 @@ interface UserPayload extends jwt.JwtPayload {
   id: string;
   email: string;
   role: Role;
+  isVerified: boolean;
 }
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -53,4 +54,21 @@ export const authorizeRoles = (allowedRoles: Role[]) => {
 
     next();
   };
+};
+
+export const requireVerification = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({message: 'Unauthorized: User not found'});
+  }
+
+  // TechHead is always considered verified (as they don't have an isVerified field in schema)
+  if (req.user.role === 'TechHead') {
+    return next();
+  }
+
+  if (!req.user.isVerified) {
+    return res.status(403).json({message: 'Forbidden: Account not verified'});
+  }
+
+  next();
 };

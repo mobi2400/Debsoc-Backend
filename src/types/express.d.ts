@@ -6,6 +6,7 @@ export interface UserPayload extends JwtPayload {
   id: string;
   email: string;
   role: Role;
+  isVerified: boolean;
 }
 
 declare global {
