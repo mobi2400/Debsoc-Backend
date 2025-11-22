@@ -23,6 +23,8 @@ model President {
   email String @unique
   password String
   isVerified Boolean @default(false)
+  anonymousMessages AnonymousMessage[] @relation("messageToPresident")
+  anonymousFeedbacks AnonymousFeedback[] @relation("feedbackFromPresident")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -44,6 +46,8 @@ model cabinet {
   password String
   isVerified Boolean @default(false)
   tasks task[] @relation("assignedTo")
+  anonymousMessages AnonymousMessage[] @relation("messageToPresidentFromCabinet")
+  anonymousFeedbacks AnonymousFeedback[] @relation("feedbackFromCabinet")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -68,9 +72,39 @@ model Member {
   password String
   isVerified Boolean @default(false)
   tasks task[] @relation("assignedToMember")
+  anonymousMessages AnonymousMessage[] @relation("messageFromMember")
+  anonymousFeedbacks AnonymousFeedback[] @relation("feedbackToMember")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+model AnonymousMessage {
+  id String @id @default(uuid())
+  message String
+  presidentId String
+  president President @relation("messageToPresident", fields: [presidentId], references: [id])
+  senderType String // "Member" or "cabinet"
+  senderMemberId String?
+  senderMember Member? @relation("messageFromMember", fields: [senderMemberId], references: [id])
+  senderCabinetId String?
+  senderCabinet cabinet? @relation("messageToPresidentFromCabinet", fields: [senderCabinetId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AnonymousFeedback {
+  id String @id @default(uuid())
+  feedback String
+  memberId String
+  member Member @relation("feedbackToMember", fields: [memberId], references: [id])
+  senderType String // "cabinet" or "President"
+  senderCabinetId String?
+  senderCabinet cabinet? @relation("feedbackFromCabinet", fields: [senderCabinetId], references: [id])
+  senderPresidentId String?
+  senderPresident President? @relation("feedbackFromPresident", fields: [senderPresidentId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 datasource db {
   provider = "postgresql"
 }
