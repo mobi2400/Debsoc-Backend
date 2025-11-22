@@ -5,7 +5,7 @@ import {type NextFunction, type Request, type Response} from 'express';
 dotenv.config();
 
 // Define roles matching the Prisma models
-export type Role = 'TechHead' | 'President' | 'Cabinet' | 'Member';
+export type Role = 'TechHead' | 'President' | 'cabinet' | 'Member';
 
 // Interface for the decoded JWT payload
 interface UserPayload extends jwt.JwtPayload {
