@@ -180,3 +180,34 @@ export const getSessionReports = async (req: Request, res: Response, next: NextF
         next(error);
     }
 };
+// Give Anonymous Message to President
+export const giveAnonymousMessageToPresident = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { message, presidentId } = req.body;
+        const senderCabinetId = req.user?.id;
+
+        if (!senderCabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        if (!message || !presidentId) {
+            return res.status(400).json({ message: 'Please provide message and presidentId' });
+        }
+
+        const anonymousMessage = await prisma.anonymousMessage.create({
+            data: {
+                message,
+                presidentId,
+                senderType: 'cabinet',
+                senderCabinetId,
+            },
+        });
+
+        res.status(201).json({
+            message: 'Anonymous message sent to President successfully',
+            data: anonymousMessage,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
