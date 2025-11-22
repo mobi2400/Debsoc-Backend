@@ -1,6 +1,6 @@
-import express, { type Request, type Response, type NextFunction } from 'express';
+import express, {type Request, type Response, type NextFunction} from 'express';
 import dotenv from 'dotenv';
-import { prisma } from './lib/prisma.js';
+import {prisma} from './lib/prisma.js';
 
 dotenv.config();
 
@@ -10,12 +10,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'Debsoc Backend API', version: '1.0.0' });
+  res.json({message: 'Debsoc Backend API', version: '1.0.0'});
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({error: 'Internal server error'});
 });
 
 app.listen(PORT, () => {
