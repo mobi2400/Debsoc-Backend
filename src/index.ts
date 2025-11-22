@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { prisma } from './lib/prisma.js';
 import techHeadRoutes from './routes/techHead.routes.js';
 import presidentRoutes from './routes/president.routes.js';
@@ -10,6 +11,14 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// CORS configuration - allows requests from any origin
+app.use(cors({
+  origin: '*', // In production, replace with specific domains
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 app.use(express.json());
 

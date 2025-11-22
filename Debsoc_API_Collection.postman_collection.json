@@ -1,0 +1,770 @@
+{
+    "info": {
+        "name": "Debsoc Backend API",
+        "description": "Complete API testing collection for Debsoc Backend",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "TechHead",
+            "item": [
+                {
+                    "name": "Login TechHead",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"techhead@debsoc.com\",\n  \"password\": \"techhead123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/techhead/login",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "techhead",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Unverified Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{techhead_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/techhead/unverified-users",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "techhead",
+                                "unverified-users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify President",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{techhead_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"presidentId\": \"{{president_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/techhead/verify/president",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "techhead",
+                                "verify",
+                                "president"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Cabinet",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{techhead_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"cabinetId\": \"{{cabinet_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/techhead/verify/cabinet",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "techhead",
+                                "verify",
+                                "cabinet"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Member",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{techhead_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"memberId\": \"{{member_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/techhead/verify/member",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "techhead",
+                                "verify",
+                                "member"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "President",
+            "item": [
+                {
+                    "name": "Register President",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"John President\",\n  \"email\": \"president@debsoc.com\",\n  \"password\": \"president123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/register",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login President",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"president@debsoc.com\",\n  \"password\": \"president123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/login",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Assign Task",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{president_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Prepare debate motion\",\n  \"description\": \"Research and prepare the motion for next week's debate\",\n  \"deadline\": \"2025-11-30T18:00:00Z\",\n  \"assignedToMemberId\": \"{{member_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/tasks/assign",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "tasks",
+                                "assign"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Give Feedback to Member",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{president_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"feedback\": \"Great performance in the last debate session!\",\n  \"memberId\": \"{{member_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/feedback/give",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "feedback",
+                                "give"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Session Reports",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{president_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/sessions",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "sessions"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Dashboard Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{president_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/president/dashboard",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "president",
+                                "dashboard"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Cabinet",
+            "item": [
+                {
+                    "name": "Register Cabinet",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Jane Cabinet\",\n  \"email\": \"cabinet@debsoc.com\",\n  \"password\": \"cabinet123\",\n  \"position\": \"Secretary\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/register",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Cabinet",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"cabinet@debsoc.com\",\n  \"password\": \"cabinet123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/login",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Mark Attendance",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{cabinet_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sessionDate\": \"2025-11-23T14:00:00Z\",\n  \"motiontype\": \"Parliamentary Debate\",\n  \"Chair\": \"John Doe\",\n  \"attendanceData\": [\n    {\"memberId\": \"{{member_id}}\", \"status\": \"Present\"}\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/attendance/mark",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "attendance",
+                                "mark"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Assigned Tasks",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{cabinet_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/tasks",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "tasks"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Give Feedback to Member",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{cabinet_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"feedback\": \"Good participation in the session!\",\n  \"memberId\": \"{{member_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/feedback/give",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "feedback",
+                                "give"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Session Reports",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{cabinet_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/sessions",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "sessions"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Send Message to President",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{cabinet_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"We need more resources for the upcoming event\",\n  \"presidentId\": \"{{president_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cabinet/messages/president",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "cabinet",
+                                "messages",
+                                "president"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Member",
+            "item": [
+                {
+                    "name": "Register Member",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Alice Member\",\n  \"email\": \"member@debsoc.com\",\n  \"password\": \"member123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/register",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Member",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"member@debsoc.com\",\n  \"password\": \"member123\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/login",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get My Attendance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{member_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/attendance",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "attendance"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Assigned Tasks",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{member_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/tasks",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "tasks"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Send Message to President",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{member_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"I have a suggestion for the next debate topic\",\n  \"presidentId\": \"{{president_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/messages/president",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "messages",
+                                "president"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get My Feedback",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{member_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/member/feedback",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "api",
+                                "member",
+                                "feedback"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
