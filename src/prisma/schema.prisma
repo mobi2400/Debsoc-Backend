@@ -35,13 +35,24 @@ model President {
 }
 
 model Session {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   sessionDate DateTime
   motiontype  String
   Chair       String
-  Attendant   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  attendance  Attendance[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
+  status    String // "Present" or "Absent"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model cabinet {
@@ -84,6 +95,7 @@ model Member {
   tasks                task[]              @relation("assignedToMember")
   anonymousMessages    AnonymousMessage[]  @relation("messageFromMember")
   anonymousFeedbacks   AnonymousFeedback[] @relation("feedbackToMember")
+  attendance           Attendance[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 }
