@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prisma:generate": "prisma generate --schema=./src/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./src/prisma/schema.prisma",
@@ -19,10 +21,11 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "prisma": "^7.0.0"
+    "prettier": "^3.6.2"
   }
 }
