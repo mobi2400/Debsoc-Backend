@@ -23,12 +23,14 @@ A comprehensive backend API for managing Debating Society operations, including 
 ## ✨ Features
 
 ### Role-Based Access Control
+
 - **TechHead**: System administrator with user verification capabilities
 - **President**: Society leader with task assignment and management powers
 - **Cabinet**: Administrative members with attendance tracking and feedback abilities
 - **Member**: Regular members with task and attendance viewing capabilities
 
 ### Core Functionality
+
 - ✅ User registration and authentication (JWT-based)
 - ✅ Role-based authorization with verification system
 - ✅ Task assignment and tracking
@@ -41,44 +43,78 @@ A comprehensive backend API for managing Debating Society operations, including 
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| **Node.js** | Runtime environment |
-| **TypeScript** | Type-safe development |
-| **Express.js** | Web framework |
-| **Prisma 7** | Modern ORM with PostgreSQL adapter |
-| **PostgreSQL** | Primary database |
-| **JWT** | Authentication tokens |
-| **bcryptjs** | Password hashing |
-| **CORS** | Cross-origin resource sharing |
+| Technology     | Purpose                            |
+| -------------- | ---------------------------------- |
+| **Node.js**    | Runtime environment                |
+| **TypeScript** | Type-safe development              |
+| **Express.js** | Web framework                      |
+| **Prisma 7**   | Modern ORM with PostgreSQL adapter |
+| **PostgreSQL** | Primary database                   |
+| **JWT**        | Authentication tokens              |
+| **bcryptjs**   | Password hashing                   |
+| **CORS**       | Cross-origin resource sharing      |
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- PostgreSQL database
-- npm or yarn package manager
+- Docker installed on your machine
+- PostgreSQL database (or use a Docker container)
 
-### Installation
+### Run with Docker (Recommended)
+
+1. **Pull the image**
+
+   ```bash
+   docker pull ayushkumar320/debsoc:v1.1
+   ```
+
+2. **Run the container**
+
+   **Option A: Using a .env file (Recommended)**
+
+   Ensure you have a `.env` file in your current directory (where you run this command).
+
+   ```bash
+   docker run -p 3000:3000 --env-file .env ayushkumar320/debsoc:v1.1
+   ```
+
+   **Option B: Passing variables inline**
+
+   ```bash
+   docker run -p 3000:3000 \
+     -e DATABASE_URL="postgresql://user:password@host:5432/debsoc" \
+     -e JWT_SECRET="your-super-secret-jwt-key" \
+     ayushkumar320/debsoc:v1.1
+   ```
+
+   Server will be running at `http://localhost:3000`
+
+### Development Setup (Manual)
+
+If you want to contribute or run the code locally without Docker:
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/mobi2400/Debsoc-Backend.git
    cd Debsoc-Backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` with your configuration:
+
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/debsoc"
    JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
@@ -87,23 +123,26 @@ A comprehensive backend API for managing Debating Society operations, including 
    ```
 
 4. **Generate Prisma Client**
+
    ```bash
    npm run prisma:generate
    ```
 
 5. **Run database migrations**
+
    ```bash
    npm run prisma:migrate
    ```
 
 6. **Create TechHead account** (manual database insert required)
+
    ```javascript
    // Generate password hash
    const bcrypt = require('bcryptjs');
    const hash = await bcrypt.hash('your-password', 10);
    console.log(hash);
    ```
-   
+
    ```sql
    INSERT INTO "TechHead" (id, name, email, password, "createdAt", "updatedAt")
    VALUES (
@@ -121,17 +160,18 @@ A comprehensive backend API for managing Debating Society operations, including 
    npm run dev
    ```
 
-Server will be running at `http://localhost:3000`
-
 ## 📚 API Documentation
 
 ### Base URL
+
 ```
 http://localhost:3000/api
 ```
 
 ### Authentication
+
 All protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
@@ -139,48 +179,53 @@ Authorization: Bearer <your-jwt-token>
 ### API Endpoints
 
 #### TechHead Routes (`/api/techhead`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/login` | Public | Login TechHead |
-| POST | `/verify/president` | TechHead | Verify President account |
-| POST | `/verify/cabinet` | TechHead | Verify Cabinet account |
-| POST | `/verify/member` | TechHead | Verify Member account |
-| GET | `/unverified-users` | TechHead | Get all unverified users |
+
+| Method | Endpoint            | Auth     | Description              |
+| ------ | ------------------- | -------- | ------------------------ |
+| POST   | `/login`            | Public   | Login TechHead           |
+| POST   | `/verify/president` | TechHead | Verify President account |
+| POST   | `/verify/cabinet`   | TechHead | Verify Cabinet account   |
+| POST   | `/verify/member`    | TechHead | Verify Member account    |
+| GET    | `/unverified-users` | TechHead | Get all unverified users |
 
 #### President Routes (`/api/president`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | Public | Register new President |
-| POST | `/login` | Public | Login President |
-| POST | `/tasks/assign` | President (Verified) | Assign task to Cabinet/Member |
-| POST | `/feedback/give` | President (Verified) | Give feedback to Member |
-| GET | `/sessions` | President (Verified) | Get session reports |
-| GET | `/dashboard` | President (Verified) | Get dashboard data |
+
+| Method | Endpoint         | Auth                 | Description                   |
+| ------ | ---------------- | -------------------- | ----------------------------- |
+| POST   | `/register`      | Public               | Register new President        |
+| POST   | `/login`         | Public               | Login President               |
+| POST   | `/tasks/assign`  | President (Verified) | Assign task to Cabinet/Member |
+| POST   | `/feedback/give` | President (Verified) | Give feedback to Member       |
+| GET    | `/sessions`      | President (Verified) | Get session reports           |
+| GET    | `/dashboard`     | President (Verified) | Get dashboard data            |
 
 #### Cabinet Routes (`/api/cabinet`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | Public | Register new Cabinet member |
-| POST | `/login` | Public | Login Cabinet member |
-| POST | `/attendance/mark` | Cabinet (Verified) | Mark session attendance |
-| GET | `/tasks` | Cabinet (Verified) | Get assigned tasks |
-| POST | `/feedback/give` | Cabinet (Verified) | Give feedback to Member |
-| GET | `/sessions` | Cabinet (Verified) | Get session reports |
-| POST | `/messages/president` | Cabinet (Verified) | Send anonymous message to President |
+
+| Method | Endpoint              | Auth               | Description                         |
+| ------ | --------------------- | ------------------ | ----------------------------------- |
+| POST   | `/register`           | Public             | Register new Cabinet member         |
+| POST   | `/login`              | Public             | Login Cabinet member                |
+| POST   | `/attendance/mark`    | Cabinet (Verified) | Mark session attendance             |
+| GET    | `/tasks`              | Cabinet (Verified) | Get assigned tasks                  |
+| POST   | `/feedback/give`      | Cabinet (Verified) | Give feedback to Member             |
+| GET    | `/sessions`           | Cabinet (Verified) | Get session reports                 |
+| POST   | `/messages/president` | Cabinet (Verified) | Send anonymous message to President |
 
 #### Member Routes (`/api/member`)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | Public | Register new Member |
-| POST | `/login` | Public | Login Member |
-| GET | `/attendance` | Member (Verified) | Get own attendance records |
-| GET | `/tasks` | Member (Verified) | Get assigned tasks |
-| POST | `/messages/president` | Member (Verified) | Send anonymous message to President |
-| GET | `/feedback` | Member (Verified) | Get received feedback |
+
+| Method | Endpoint              | Auth              | Description                         |
+| ------ | --------------------- | ----------------- | ----------------------------------- |
+| POST   | `/register`           | Public            | Register new Member                 |
+| POST   | `/login`              | Public            | Login Member                        |
+| GET    | `/attendance`         | Member (Verified) | Get own attendance records          |
+| GET    | `/tasks`              | Member (Verified) | Get assigned tasks                  |
+| POST   | `/messages/president` | Member (Verified) | Send anonymous message to President |
+| GET    | `/feedback`           | Member (Verified) | Get received feedback               |
 
 ### Example Requests
 
 #### Register President
+
 ```bash
 curl -X POST http://localhost:3000/api/president/register \
   -H "Content-Type: application/json" \
@@ -192,6 +237,7 @@ curl -X POST http://localhost:3000/api/president/register \
 ```
 
 #### Login and Get Token
+
 ```bash
 curl -X POST http://localhost:3000/api/president/login \
   -H "Content-Type: application/json" \
@@ -202,6 +248,7 @@ curl -X POST http://localhost:3000/api/president/login \
 ```
 
 #### Assign Task (Authenticated)
+
 ```bash
 curl -X POST http://localhost:3000/api/president/tasks/assign \
   -H "Content-Type: application/json" \
@@ -277,6 +324,7 @@ Cabinet/Member ──sends──> AnonymousMessage ──to──> President
 ## 🔐 Authentication
 
 ### JWT Token Structure
+
 ```json
 {
   "id": "user-uuid",
@@ -289,12 +337,14 @@ Cabinet/Member ──sends──> AnonymousMessage ──to──> President
 ```
 
 ### Verification Flow
+
 1. User registers → Receives JWT token (unverified)
 2. TechHead verifies user → User status updated
 3. User logs in again → Receives new JWT with verified status
 4. User can access protected routes
 
 ### Middleware Chain
+
 ```
 Request → authMiddleware → authorizeRoles → requireVerification → Controller
 ```
@@ -302,12 +352,15 @@ Request → authMiddleware → authorizeRoles → requireVerification → Contro
 ## 🧪 Testing
 
 ### Postman Collection
+
 Import `Debsoc_API_Collection.postman_collection.json` into Postman for complete API testing.
 
 ### Testing Guide
+
 See `API_TESTING_GUIDE.md` for detailed step-by-step testing instructions.
 
 ### Manual Testing
+
 ```bash
 # Health check
 curl http://localhost:3000/
@@ -322,17 +375,17 @@ curl -H "Origin: http://example.com" \
 
 ## 📝 Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Compile TypeScript to JavaScript |
-| `npm start` | Run production server |
-| `npm run format` | Format code with Prettier |
-| `npm run format:check` | Check code formatting |
-| `npm run prisma:generate` | Generate Prisma Client |
-| `npm run prisma:migrate` | Run database migrations |
-| `npm run prisma:studio` | Open Prisma Studio GUI |
-| `npm run prisma:push` | Push schema changes to database |
+| Script                    | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `npm run dev`             | Start development server with hot reload |
+| `npm run build`           | Compile TypeScript to JavaScript         |
+| `npm start`               | Run production server                    |
+| `npm run format`          | Format code with Prettier                |
+| `npm run format:check`    | Check code formatting                    |
+| `npm run prisma:generate` | Generate Prisma Client                   |
+| `npm run prisma:migrate`  | Run database migrations                  |
+| `npm run prisma:studio`   | Open Prisma Studio GUI                   |
+| `npm run prisma:push`     | Push schema changes to database          |
 
 ## 🚀 Deployment
 
@@ -341,12 +394,14 @@ curl -H "Origin: http://example.com" \
 See `DEPLOYMENT_GUIDE.md` for comprehensive deployment instructions.
 
 ### Recommended Platforms
+
 - **Render** - Easy deployment with PostgreSQL
 - **Railway** - Auto-deployment from GitHub
 - **Heroku** - Classic PaaS with addons
 - **DigitalOcean** - App Platform with databases
 
 ### Production Checklist
+
 - [ ] Update CORS to specific domains
 - [ ] Set strong JWT_SECRET
 - [ ] Use production database
@@ -357,13 +412,13 @@ See `DEPLOYMENT_GUIDE.md` for comprehensive deployment instructions.
 
 ## 🔧 Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | - |
-| `JWT_SECRET` | Secret key for JWT tokens | Yes | - |
-| `PORT` | Server port | No | 3000 |
-| `NODE_ENV` | Environment mode | No | development |
-| `ALLOWED_ORIGINS` | CORS allowed origins | No | * |
+| Variable          | Description                  | Required | Default     |
+| ----------------- | ---------------------------- | -------- | ----------- |
+| `DATABASE_URL`    | PostgreSQL connection string | Yes      | -           |
+| `JWT_SECRET`      | Secret key for JWT tokens    | Yes      | -           |
+| `PORT`            | Server port                  | No       | 3000        |
+| `NODE_ENV`        | Environment mode             | No       | development |
+| `ALLOWED_ORIGINS` | CORS allowed origins         | No       | \*          |
 
 ## 🤝 Contributing
 
@@ -374,6 +429,7 @@ See `DEPLOYMENT_GUIDE.md` for comprehensive deployment instructions.
 5. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow TypeScript best practices
 - Maintain type safety
 - Write meaningful commit messages
@@ -399,6 +455,7 @@ ISC
 **Built with ❤️ for the Debating Society**
 
 For detailed documentation, see:
+
 - [API Testing Guide](./API_TESTING_GUIDE.md)
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md)
 - [Codebase Analysis](./CODEBASE_ANALYSIS.md)
