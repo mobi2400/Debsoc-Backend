@@ -211,3 +211,23 @@ export const giveAnonymousMessageToPresident = async (req: Request, res: Respons
         next(error);
     }
 };
+
+// Get Dashboard Data (Members and Cabinet)
+export const getDashboardData = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const members = await prisma.member.findMany({
+            select: { id: true, name: true, email: true, isVerified: true },
+        });
+
+        const cabinet = await prisma.cabinet.findMany({
+            select: { id: true, name: true, email: true, position: true, isVerified: true },
+        });
+
+        res.status(200).json({
+            members,
+            cabinet,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
