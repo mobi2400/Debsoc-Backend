@@ -35,5 +35,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "removeComments": true
-  }
+  },
+  "exclude": ["prisma.config.ts"]
 }
