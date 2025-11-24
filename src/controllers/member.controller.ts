@@ -186,3 +186,39 @@ export const getMyFeedback = async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 };
+// Get Sent Messages (to President)
+export const getSentMessages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const memberId = req.user?.id;
+
+        if (!memberId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const messages = await prisma.anonymousMessage.findMany({
+            where: { senderMemberId: memberId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                president: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get All Presidents
+export const getPresidents = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presidents = await prisma.president.findMany({
+            select: { id: true, name: true, email: true, isVerified: true },
+        });
+        res.status(200).json({ presidents });
+    } catch (error) {
+        next(error);
+    }
+};

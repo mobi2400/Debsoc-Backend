@@ -8,6 +8,7 @@ import {
     getDashboardData,
     getAttendanceReport,
     getAnonymousMessages,
+    getSentFeedback,
 } from '../controllers/president.controller.js';
 import { authMiddleware, authorizeRoles, requireVerification } from '../middleware/auth.middleware.js';
 
@@ -24,5 +25,6 @@ router.get('/sessions', authMiddleware, authorizeRoles(['President']), requireVe
 router.get('/dashboard', authMiddleware, authorizeRoles(['President']), requireVerification, getDashboardData);
 router.get('/attendance-report', authMiddleware, authorizeRoles(['President']), requireVerification, getAttendanceReport);
 router.get('/messages', authMiddleware, authorizeRoles(['President']), requireVerification, getAnonymousMessages);
+router.get('/feedback/sent', authMiddleware, authorizeRoles(['President']), requireVerification, getSentFeedback);
 
 export default router;

@@ -250,3 +250,27 @@ export const getAnonymousMessages = async (req: Request, res: Response, next: Ne
         next(error);
     }
 };
+// Get Sent Feedback (to Members)
+export const getSentFeedback = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presidentId = req.user?.id;
+
+        if (!presidentId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const feedbacks = await prisma.anonymousFeedback.findMany({
+            where: { senderPresidentId: presidentId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                member: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ feedbacks });
+    } catch (error) {
+        next(error);
+    }
+};

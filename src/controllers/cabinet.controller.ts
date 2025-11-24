@@ -292,3 +292,52 @@ export const getAttendanceReport = async (req: Request, res: Response, next: Nex
         next(error);
     }
 };
+// Get Sent Messages (to President)
+export const getSentMessages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const cabinetId = req.user?.id;
+
+        if (!cabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const messages = await prisma.anonymousMessage.findMany({
+            where: { senderCabinetId: cabinetId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                president: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get Sent Feedback (to Members)
+export const getSentFeedback = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const cabinetId = req.user?.id;
+
+        if (!cabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const feedbacks = await prisma.anonymousFeedback.findMany({
+            where: { senderCabinetId: cabinetId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                member: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ feedbacks });
+    } catch (error) {
+        next(error);
+    }
+};
