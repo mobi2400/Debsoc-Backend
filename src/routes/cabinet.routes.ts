@@ -7,6 +7,9 @@ import {
     giveAnonymousFeedback,
     getSessionReports,
     giveAnonymousMessageToPresident,
+    getDashboardData,
+    getSentMessages,
+    getSentFeedback,
 } from '../controllers/cabinet.controller.js';
 import { authMiddleware, authorizeRoles, requireVerification } from '../middleware/auth.middleware.js';
 
@@ -22,5 +25,8 @@ router.get('/tasks', authMiddleware, authorizeRoles(['cabinet']), requireVerific
 router.post('/feedback/give', authMiddleware, authorizeRoles(['cabinet']), requireVerification, giveAnonymousFeedback);
 router.get('/sessions', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSessionReports);
 router.post('/messages/president', authMiddleware, authorizeRoles(['cabinet']), requireVerification, giveAnonymousMessageToPresident);
+router.get('/dashboard', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getDashboardData);
+router.get('/messages/sent', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSentMessages);
+router.get('/feedback/sent', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSentFeedback);
 
 export default router;

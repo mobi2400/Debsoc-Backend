@@ -211,3 +211,83 @@ export const giveAnonymousMessageToPresident = async (req: Request, res: Respons
         next(error);
     }
 };
+
+// Get Dashboard Data (Members, Cabinet, and Presidents)
+export const getDashboardData = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const members = await prisma.member.findMany({
+            select: { id: true, name: true, email: true, isVerified: true },
+        });
+
+        const cabinet = await prisma.cabinet.findMany({
+            select: { id: true, name: true, email: true, position: true, isVerified: true },
+        });
+
+        const presidents = await prisma.president.findMany({
+            select: { id: true, name: true, email: true, isVerified: true },
+        });
+
+        res.status(200).json({
+            members,
+            cabinet,
+            presidents,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get Sent Messages (to President)
+export const getSentMessages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const cabinetId = req.user?.id;
+
+        if (!cabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const messages = await prisma.anonymousMessage.findMany({
+            where: { senderCabinetId: cabinetId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                president: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get Sent Feedback
+export const getSentFeedback = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const cabinetId = req.user?.id;
+
+        if (!cabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const feedbacks = await prisma.anonymousFeedback.findMany({
+            where: { senderCabinetId: cabinetId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                feedback: true,
+                memberId: true,
+                senderType: true,
+                createdAt: true,
+                member: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ feedbacks });
+    } catch (error) {
+        next(error);
+    }
+};

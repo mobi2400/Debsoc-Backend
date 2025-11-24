@@ -6,6 +6,8 @@ import {
     getAssignedTasks,
     giveAnonymousMessageToPresident,
     getMyFeedback,
+    getSentMessages,
+    getPresidents,
 } from '../controllers/member.controller.js';
 import { authMiddleware, authorizeRoles, requireVerification } from '../middleware/auth.middleware.js';
 
@@ -20,5 +22,7 @@ router.get('/attendance', authMiddleware, authorizeRoles(['Member']), requireVer
 router.get('/tasks', authMiddleware, authorizeRoles(['Member']), requireVerification, getAssignedTasks);
 router.post('/messages/president', authMiddleware, authorizeRoles(['Member']), requireVerification, giveAnonymousMessageToPresident);
 router.get('/feedback', authMiddleware, authorizeRoles(['Member']), requireVerification, getMyFeedback);
+router.get('/messages/sent', authMiddleware, authorizeRoles(['Member']), requireVerification, getSentMessages);
+router.get('/presidents', authMiddleware, authorizeRoles(['Member']), requireVerification, getPresidents);
 
 export default router;

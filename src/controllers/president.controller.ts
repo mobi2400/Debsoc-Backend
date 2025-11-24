@@ -177,3 +177,84 @@ export const getDashboardData = async (req: Request, res: Response, next: NextFu
         next(error);
     }
 };
+
+// Get Messages (from Cabinet and Members)
+export const getMessages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presidentId = req.user?.id;
+
+        if (!presidentId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const messages = await prisma.anonymousMessage.findMany({
+            where: { presidentId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                message: true,
+                presidentId: true,
+                senderType: true,
+                createdAt: true,
+            },
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get All Tasks (assigned by this President)
+export const getTasks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Get all tasks (both assigned to cabinet and members)
+        // Note: Tasks don't have a direct presidentId field, so we return all tasks
+        // In a production app, you might want to track who assigned the task
+        const tasks = await prisma.task.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                assignedTo: {
+                    select: { id: true, name: true, email: true, position: true },
+                },
+                assignedToMember: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+        });
+
+        res.status(200).json({ tasks });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get Sent Feedback (from this President)
+export const getSentFeedback = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presidentId = req.user?.id;
+
+        if (!presidentId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const feedbacks = await prisma.anonymousFeedback.findMany({
+            where: { senderPresidentId: presidentId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                feedback: true,
+                memberId: true,
+                senderType: true,
+                createdAt: true,
+                member: {
+                    select: { name: true, email: true }
+                }
+            }
+        });
+
+        res.status(200).json({ feedbacks });
+    } catch (error) {
+        next(error);
+    }
+};
