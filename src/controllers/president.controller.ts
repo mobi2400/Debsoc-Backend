@@ -113,6 +113,27 @@ export const assignTask = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+// Get All Tasks (Assigned by any President)
+export const getAllTasks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const tasks = await prisma.task.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                assignedTo: {
+                    select: { name: true, position: true }
+                },
+                assignedToMember: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        res.status(200).json({ tasks });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Give Anonymous Feedback to Member
 export const giveAnonymousFeedback = async (req: Request, res: Response, next: NextFunction) => {
     try {

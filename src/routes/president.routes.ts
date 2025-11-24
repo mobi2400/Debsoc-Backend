@@ -9,6 +9,7 @@ import {
     getAttendanceReport,
     getAnonymousMessages,
     getSentFeedback,
+    getAllTasks,
 } from '../controllers/president.controller.js';
 import { authMiddleware, authorizeRoles, requireVerification } from '../middleware/auth.middleware.js';
 
@@ -20,6 +21,7 @@ router.post('/login', loginPresident);
 
 // Protected routes - President only (requires verification)
 router.post('/tasks/assign', authMiddleware, authorizeRoles(['President']), requireVerification, assignTask);
+router.get('/tasks', authMiddleware, authorizeRoles(['President']), requireVerification, getAllTasks);
 router.post('/feedback/give', authMiddleware, authorizeRoles(['President']), requireVerification, giveAnonymousFeedback);
 router.get('/sessions', authMiddleware, authorizeRoles(['President']), requireVerification, getSessionReports);
 router.get('/dashboard', authMiddleware, authorizeRoles(['President']), requireVerification, getDashboardData);
