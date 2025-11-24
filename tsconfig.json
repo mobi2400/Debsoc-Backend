@@ -34,12 +34,7 @@
     "skipLibCheck": true,
     "removeComments": true
   },
-  "include": [
-    "src/**/*",
-    "api/**/*"
-  ],
   "exclude": [
-    "prisma.config.ts",
-    "node_modules"
+    "prisma.config.ts"
   ]
 }

@@ -3,50 +3,7 @@ import {prisma} from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// Register TechHead
-export const registerTechHead = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const {name, email, password} = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({message: 'Please provide all fields'});
-    }
-
-    const existingTechHead = await prisma.techHead.findUnique({
-      where: {email},
-    });
-
-    if (existingTechHead) {
-      return res.status(400).json({message: 'TechHead already exists'});
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const techHead = await prisma.techHead.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-
-    const token = jwt.sign(
-      {id: techHead.id, email: techHead.email, role: 'TechHead', isVerified: true},
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: '1d',
-      }
-    );
-
-    res.status(201).json({
-      message: 'TechHead registered successfully',
-      token,
-      user: {id: techHead.id, name: techHead.name, email: techHead.email, role: 'TechHead'},
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // Login TechHead
 export const loginTechHead = async (req: Request, res: Response, next: NextFunction) => {

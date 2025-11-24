@@ -113,27 +113,6 @@ export const assignTask = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-// Get All Tasks (Assigned by any President)
-export const getAllTasks = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const tasks = await prisma.task.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                assignedTo: {
-                    select: { name: true, position: true }
-                },
-                assignedToMember: {
-                    select: { name: true }
-                }
-            }
-        });
-
-        res.status(200).json({ tasks });
-    } catch (error) {
-        next(error);
-    }
-};
-
 // Give Anonymous Feedback to Member
 export const giveAnonymousFeedback = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -171,7 +150,6 @@ export const getSessionReports = async (req: Request, res: Response, next: NextF
     try {
         const sessions = await prisma.session.findMany({
             orderBy: { sessionDate: 'desc' },
-            include: { attendance: true },
         });
 
         res.status(200).json({ sessions });
@@ -187,110 +165,14 @@ export const getDashboardData = async (req: Request, res: Response, next: NextFu
             select: { id: true, name: true, email: true, isVerified: true },
         });
 
-        const cabinetMembers = await prisma.cabinet.findMany({
+        const cabinet = await prisma.cabinet.findMany({
             select: { id: true, name: true, email: true, position: true, isVerified: true },
         });
 
         res.status(200).json({
             members,
-            cabinet: cabinetMembers,
+            cabinet,
         });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Get Attendance Report (Members and Cabinet)
-export const getAttendanceReport = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const members = await prisma.member.findMany({
-            select: { id: true, name: true, email: true },
-        });
-
-        const cabinetMembers = await prisma.cabinet.findMany({
-            select: { id: true, name: true, email: true, position: true },
-        });
-
-        const sessions = await prisma.session.findMany({
-            include: { attendance: true },
-        });
-
-        const totalSessions = sessions.length;
-
-        const memberStats = members.map(member => {
-            const memberAttendance = sessions.flatMap(s => s.attendance).filter(a => a.memberId === member.id);
-            const present = memberAttendance.filter(a => a.status === 'Present').length;
-            const absent = memberAttendance.filter(a => a.status === 'Absent').length;
-            return {
-                ...member,
-                totalSessions,
-                present,
-                absent,
-                percentage: totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0,
-            };
-        });
-
-        const cabinetStats = cabinetMembers.map(cab => {
-            const cabAttendance = sessions.flatMap(s => s.attendance).filter(a => a.cabinetId === cab.id);
-            const present = cabAttendance.filter(a => a.status === 'Present').length;
-            const absent = cabAttendance.filter(a => a.status === 'Absent').length;
-            return {
-                ...cab,
-                totalSessions,
-                present,
-                absent,
-                percentage: totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0,
-            };
-        });
-
-        res.status(200).json({
-            members: memberStats,
-            cabinet: cabinetStats,
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Get Anonymous Messages for President
-export const getAnonymousMessages = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const presidentId = req.user?.id;
-
-        if (!presidentId) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        const messages = await prisma.anonymousMessage.findMany({
-            where: { presidentId },
-            orderBy: { createdAt: 'desc' },
-        });
-
-        res.status(200).json({ messages });
-    } catch (error) {
-        next(error);
-    }
-};
-// Get Sent Feedback (to Members)
-export const getSentFeedback = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const presidentId = req.user?.id;
-
-        if (!presidentId) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        const feedbacks = await prisma.anonymousFeedback.findMany({
-            where: { senderPresidentId: presidentId },
-            orderBy: { createdAt: 'desc' },
-            include: {
-                member: {
-                    select: { name: true, email: true }
-                }
-            }
-        });
-
-        res.status(200).json({ feedbacks });
     } catch (error) {
         next(error);
     }

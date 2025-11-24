@@ -52,10 +52,8 @@ model Attendance {
   id        String   @id @default(uuid())
   sessionId String
   session   Session  @relation(fields: [sessionId], references: [id])
-  memberId  String?
-  member    Member?  @relation(fields: [memberId], references: [id])
-  cabinetId String?
-  cabinet   cabinet? @relation(fields: [cabinetId], references: [id])
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
   status    String // "Present" or "Absent"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,7 +71,6 @@ model cabinet {
   tasks                task[]              @relation("assignedTo")
   anonymousMessages    AnonymousMessage[]  @relation("messageToPresidentFromCabinet")
   anonymousFeedbacks   AnonymousFeedback[] @relation("feedbackFromCabinet")
-  attendance           Attendance[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 }

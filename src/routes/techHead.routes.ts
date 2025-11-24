@@ -1,6 +1,5 @@
 import {Router} from 'express';
 import {
-  registerTechHead,
   loginTechHead,
   verifyPresident,
   verifyCabinet,
@@ -12,7 +11,6 @@ import {authMiddleware, authorizeRoles} from '../middleware/auth.middleware.js';
 const router = Router();
 
 // Public routes
-router.post('/register', registerTechHead);
 router.post('/login', loginTechHead);
 
 // Protected routes - TechHead only

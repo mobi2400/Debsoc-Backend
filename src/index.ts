@@ -23,7 +23,12 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'Debsoc Backend API', version: '1.0.0' });
+  try {
+    res.json({ message: 'Debsoc Backend API', version: '1.0.0' });
+  } catch (error) {
+    console.error('Error in root route:', error);
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
+  }
 });
 
 // API Routes
