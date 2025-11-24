@@ -227,9 +227,14 @@ export const getDashboardData = async (req: Request, res: Response, next: NextFu
             select: { id: true, name: true, email: true, position: true, isVerified: true },
         });
 
+        const presidents = await prisma.president.findMany({
+            select: { id: true, name: true, email: true, isVerified: true },
+        });
+
         res.status(200).json({
             members,
             cabinet: cabinetMembers,
+            presidents,
         });
     } catch (error) {
         next(error);

@@ -230,3 +230,23 @@ export const getAttendanceReport = async (req: Request, res: Response, next: Nex
         next(error);
     }
 };
+
+// Get Anonymous Messages for President
+export const getAnonymousMessages = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presidentId = req.user?.id;
+
+        if (!presidentId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const messages = await prisma.anonymousMessage.findMany({
+            where: { presidentId },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        next(error);
+    }
+};
