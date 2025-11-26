@@ -156,7 +156,14 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         }
 
         // Create session with attendance records (if any)
-        const sessionData: any = {
+        const sessionData: {
+            sessionDate: Date;
+            motiontype: string;
+            Chair: string;
+            attendance?: {
+                create: Array<{ memberId: string; status: string }>;
+            };
+        } = {
             sessionDate: parsedDate,
             motiontype: motiontype.trim(),
             Chair: Chair.trim(),
@@ -172,13 +179,123 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             };
         }
 
-        // Create session with attendance records (if any)
-        const session = await prisma.session.create({
-            data: sessionData,
-            include: { attendance: true },
-        });
+        // Log the data structure we're about to send to Prisma
+        const logData = {
+            sessionDate: sessionData.sessionDate.toISOString(),
+            motiontype: sessionData.motiontype,
+            Chair: sessionData.Chair,
+            hasAttendance: !!sessionData.attendance,
+            attendanceCount: sessionData.attendance?.create.length || 0,
+            attendanceData: sessionData.attendance?.create || []
+        };
+        console.log('Attempting to create session with data:', JSON.stringify(logData, null, 2));
+
+        // Test database connection first
+        try {
+            await prisma.$connect();
+            console.log('Database connection successful');
+        } catch (connectError) {
+            console.error('Database connection failed:', connectError);
+            return res.status(503).json({ 
+                message: 'Database connection failed',
+                error: connectError instanceof Error ? connectError.message : 'Unknown connection error'
+            });
+        }
+
+        // Create session - try nested create first, fallback to separate creates if needed
+        type SessionWithAttendance = {
+            id: string;
+            sessionDate: Date;
+            motiontype: string;
+            Chair: string;
+            attendance: Array<{ id: string; memberId: string; status: string }>;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         
-        console.log('Session created successfully:', session.id);
+        let session: SessionWithAttendance;
+        try {
+            // If no attendance data, create session without nested create
+            if (!sessionData.attendance || sessionData.attendance.create.length === 0) {
+                console.log('Creating session without attendance records');
+                session = await prisma.session.create({
+                    data: {
+                        sessionDate: sessionData.sessionDate,
+                        motiontype: sessionData.motiontype,
+                        Chair: sessionData.Chair,
+                    },
+                    include: { attendance: true },
+                }) as SessionWithAttendance;
+                console.log('Session created successfully (no attendance):', session.id);
+            } else {
+                console.log('Attempting to create session with nested attendance records:', sessionData.attendance.create.length);
+                try {
+                    // Try nested create first
+                    session = await prisma.session.create({
+                        data: sessionData,
+                        include: { attendance: true },
+                    }) as SessionWithAttendance;
+                    console.log('Session created successfully (with nested attendance):', session.id);
+                } catch (nestedError: any) {
+                    console.warn('Nested create failed, trying separate creates:', nestedError?.message);
+                    // Fallback: Create session first, then attendance records
+                    const createdSession = await prisma.session.create({
+                        data: {
+                            sessionDate: sessionData.sessionDate,
+                            motiontype: sessionData.motiontype,
+                            Chair: sessionData.Chair,
+                        },
+                        include: { attendance: true },
+                    });
+                    console.log('Session created, now creating attendance records:', createdSession.id);
+                    
+                    // Create attendance records separately
+                    if (sessionData.attendance && sessionData.attendance.create.length > 0) {
+                        await prisma.attendance.createMany({
+                            data: sessionData.attendance.create.map(att => ({
+                                sessionId: createdSession.id,
+                                memberId: att.memberId,
+                                status: att.status
+                            }))
+                        });
+                        console.log('Attendance records created successfully');
+                        
+                        // Fetch the session again with attendance
+                        const fetchedSession = await prisma.session.findUnique({
+                            where: { id: createdSession.id },
+                            include: { attendance: true }
+                        });
+                        if (!fetchedSession) {
+                            throw new Error('Failed to retrieve created session');
+                        }
+                        session = fetchedSession as SessionWithAttendance;
+                    } else {
+                        session = createdSession as SessionWithAttendance;
+                    }
+                }
+            }
+        } catch (createError: any) {
+            console.error('='.repeat(80));
+            console.error('PRISMA CREATE ERROR - Detailed Information:');
+            console.error('Error type:', typeof createError);
+            console.error('Error constructor:', createError?.constructor?.name);
+            console.error('Error name:', createError?.name);
+            console.error('Error code:', createError?.code);
+            console.error('Error message:', createError?.message);
+            console.error('Error meta:', JSON.stringify(createError?.meta, null, 2));
+            console.error('Error clientVersion:', createError?.clientVersion);
+            console.error('Error stack:', createError?.stack);
+            
+            // Try to stringify the full error
+            try {
+                console.error('Full error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError), 2));
+            } catch (stringifyError) {
+                console.error('Could not stringify error:', stringifyError);
+            }
+            console.error('='.repeat(80));
+            throw createError; // Re-throw to be caught by outer catch
+        }
+        
         res.status(201).json({ message: 'Session attendance marked successfully', session });
     } catch (error: any) {
         console.error('='.repeat(80));
@@ -234,11 +351,14 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
                     });
                 
                 default:
+                    // Log unknown Prisma error code for debugging
+                    console.error(`Unknown Prisma error code: ${prismaCode}`);
                     return res.status(500).json({ 
-                        message: 'Database error occurred',
+                        message: `Database error occurred (Code: ${prismaCode})`,
                         error: errorMessage,
                         code: prismaCode,
-                        meta: error.meta
+                        meta: error.meta,
+                        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
                     });
             }
         }
