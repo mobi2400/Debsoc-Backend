@@ -27,12 +27,14 @@ if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
 const app = express();
 
 // Manual CORS Middleware
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
 
     // Allow any origin by echoing it back
     if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+        // Handle potential array of origins (though rare)
+        const originToSet = Array.isArray(origin) ? origin[0] : origin;
+        res.setHeader('Access-Control-Allow-Origin', originToSet);
     }
 
     // Always allow credentials
@@ -42,7 +44,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 
     // Allow common headers
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, User-Agent');
 
     // Handle preflight OPTIONS requests immediately
     if (req.method === 'OPTIONS') {
