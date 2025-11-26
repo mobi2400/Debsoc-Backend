@@ -85,6 +85,7 @@ export const loginMember = async (req: Request, res: Response, next: NextFunctio
 export const getMyAttendance = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const memberId = req.user?.id;
+        console.log('Fetching attendance for member:', memberId);
 
         if (!memberId) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -92,16 +93,27 @@ export const getMyAttendance = async (req: Request, res: Response, next: NextFun
 
         const attendance = await prisma.attendance.findMany({
             where: { memberId },
-            include: {
-                session: true,
-            },
+            select: {
+                id: true,
+                status: true,
+                session: {
+                    select: {
+                        id: true,
+                        sessionDate: true,
+                        motiontype: true,
+                        Chair: true
+                    }
+                }
+            }
         });
 
-        // Sort by session date descending in JavaScript to avoid Prisma relation sorting issues
+        // Sort by session date descending in JavaScript
+        // @ts-ignore - sessionDate is available via select
         attendance.sort((a, b) => new Date(b.session.sessionDate).getTime() - new Date(a.session.sessionDate).getTime());
 
         res.status(200).json({ attendance });
     } catch (error) {
+        console.error('Error fetching attendance:', error);
         next(error);
     }
 };
