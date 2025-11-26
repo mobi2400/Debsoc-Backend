@@ -9,6 +9,21 @@ import memberRoutes from '../src/routes/member.routes.js';
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+    console.error('Please set these variables in your .env file or environment configuration.');
+    process.exit(1);
+}
+
+// Validate JWT_SECRET strength (should be at least 32 characters)
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    console.warn('⚠️  WARNING: JWT_SECRET should be at least 32 characters long for security.');
+}
+
 const app = express();
 
 // CORS configuration - allow requests from frontend domain
@@ -21,24 +36,58 @@ const allowedOrigins = [
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
 ];
 
+// Helper function to check if origin is allowed
+const isOriginAllowed = (origin: string | undefined): boolean => {
+    if (!origin) return true; // Allow requests with no origin
+    if (allowedOrigins.includes(origin)) return true;
+    if (process.env.NODE_ENV === 'development') return true; // Allow all in development
+    return false;
+};
+
+// Manual CORS headers middleware - must be before other middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    
+    // Log CORS-related information for debugging
+    if (req.method === 'OPTIONS' || origin) {
+        console.log(`CORS: ${req.method} ${req.path} from origin: ${origin || 'none'}`);
+    }
+    
+    if (isOriginAllowed(origin)) {
+        // If origin exists and is allowed, use it
+        if (origin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        } else if (process.env.NODE_ENV === 'development') {
+            // In development, allow all origins
+            res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+        
+        console.log(`CORS headers set for origin: ${origin || 'none'}`);
+    } else {
+        console.warn(`CORS: Origin not allowed: ${origin}`);
+    }
+    
+    // Handle preflight OPTIONS requests - MUST return before other middleware
+    if (req.method === 'OPTIONS') {
+        console.log('CORS: Handling OPTIONS preflight request');
+        return res.status(204).end();
+    }
+    
+    next();
+});
+
+// Also use cors middleware as backup
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) {
-            return callback(null, true);
-        }
-        
-        // Check if origin is in allowed list
-        if (allowedOrigins.includes(origin)) {
+        if (isOriginAllowed(origin)) {
             callback(null, true);
         } else {
-            // In development, allow all origins for easier testing
-            if (process.env.NODE_ENV === 'development') {
-                callback(null, true);
-            } else {
-                console.warn(`CORS blocked origin: ${origin}`);
-                callback(new Error('Not allowed by CORS'));
-            }
+            console.warn(`CORS blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -72,14 +121,26 @@ app.use('/api/cabinet', cabinetRoutes);
 app.use('/api/member', memberRoutes);
 
 // Error handling middleware - must be last
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     console.error('='.repeat(50));
     console.error('ERROR CAUGHT IN MIDDLEWARE');
     console.error('Error type:', typeof err);
-    console.error('Error constructor:', err?.constructor?.name);
-    console.error('Error name:', err?.name);
-    console.error('Error message:', err?.message);
-    console.error('Error stack:', err?.stack);
+    
+    // Type guard for error objects
+    interface ErrorWithStatus {
+        statusCode?: number;
+        status?: number;
+        message?: string;
+        stack?: string;
+        constructor?: { name?: string };
+    }
+    
+    const error = err as ErrorWithStatus & Error;
+    
+    console.error('Error constructor:', error?.constructor?.name);
+    console.error('Error name:', error?.name);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
     console.error('Request method:', req.method);
     console.error('Request path:', req.path);
     console.error('Request URL:', req.url);
@@ -92,12 +153,12 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     }
     
     // Return detailed error (even in production for now to help debug)
-    const statusCode = err.statusCode || err.status || 500;
+    const statusCode = error?.statusCode || error?.status || 500;
     res.status(statusCode).json({ 
         error: 'Internal server error',
-        message: err?.message || 'An unexpected error occurred',
+        message: error?.message || 'An unexpected error occurred',
         ...(process.env.NODE_ENV !== 'production' && { 
-            stack: err?.stack,
+            stack: error?.stack,
             details: err
         })
     });

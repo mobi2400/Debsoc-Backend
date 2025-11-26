@@ -3,13 +3,14 @@
   "compilerOptions": {
     // File Layout
     "outDir": "./dist",
+    "rootDir": "./",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
     "target": "esnext",
     // For nodejs:
     // "lib": ["esnext"],
-    // "types": ["node"],
+    "types": ["node"],
     // and npm install -D @types/node
     // Other Outputs
     "sourceMap": false,
@@ -32,9 +33,17 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "removeComments": true
+    "removeComments": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
+  "include": [
+    "src/**/*",
+    "api/**/*"
+  ],
   "exclude": [
-    "prisma.config.ts"
+    "prisma.config.ts",
+    "node_modules",
+    "dist"
   ]
 }

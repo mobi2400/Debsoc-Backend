@@ -246,21 +246,21 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             session = result as SessionWithAttendance;
             console.log('Transaction completed successfully. Session ID:', session.id);
             
-        } catch (createError: any) {
+        } catch (createError: unknown) {
             console.error('='.repeat(80));
             console.error('PRISMA CREATE ERROR - Detailed Information:');
             console.error('Error type:', typeof createError);
-            console.error('Error constructor:', createError?.constructor?.name);
-            console.error('Error name:', createError?.name);
-            console.error('Error code:', createError?.code);
-            console.error('Error message:', createError?.message);
-            console.error('Error meta:', JSON.stringify(createError?.meta, null, 2));
-            console.error('Error clientVersion:', createError?.clientVersion);
-            console.error('Error stack:', createError?.stack);
+            console.error('Error constructor:', (createError as Error)?.constructor?.name);
+            console.error('Error name:', (createError as Error)?.name);
+            console.error('Error code:', (createError as { code?: string })?.code);
+            console.error('Error message:', (createError as Error)?.message);
+            console.error('Error meta:', JSON.stringify((createError as { meta?: unknown })?.meta, null, 2));
+            console.error('Error clientVersion:', (createError as { clientVersion?: string })?.clientVersion);
+            console.error('Error stack:', (createError as Error)?.stack);
             
             // Try to stringify the full error
             try {
-                console.error('Full error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError), 2));
+                console.error('Full error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError as object), 2));
             } catch (stringifyError) {
                 console.error('Could not stringify error:', stringifyError);
             }
@@ -269,75 +269,99 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         }
         
         res.status(201).json({ message: 'Session attendance marked successfully', session });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('='.repeat(80));
         console.error('ERROR in markAttendance - Full Details:');
         console.error('Error type:', typeof error);
-        console.error('Error constructor:', error?.constructor?.name);
-        console.error('Error name:', error?.name);
-        console.error('Error message:', error?.message);
-        console.error('Error code:', error?.code);
-        console.error('Error meta:', JSON.stringify(error?.meta, null, 2));
-        console.error('Error stack:', error?.stack);
-        console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-        console.error('='.repeat(80));
         
-        // Handle Prisma-specific errors
-        // Prisma errors have a 'code' property (e.g., 'P2002', 'P2003', etc.)
-        if (error?.code) {
-            const prismaCode = error.code;
-            const errorMessage = error.message || 'Unknown Prisma error';
+        // Type guard for Prisma errors
+        interface PrismaError {
+            code?: string;
+            message?: string;
+            meta?: unknown;
+            clientVersion?: string;
+        }
+        
+        const isPrismaError = (err: unknown): err is PrismaError => {
+            return typeof err === 'object' && err !== null && 'code' in err;
+        };
+        
+        if (isPrismaError(error)) {
+            console.error('Error constructor:', (error as Error)?.constructor?.name);
+            console.error('Error name:', (error as Error)?.name);
+            console.error('Error message:', error.message || (error as Error)?.message);
+            console.error('Error code:', error.code);
+            console.error('Error meta:', JSON.stringify(error.meta, null, 2));
+            console.error('Error clientVersion:', error.clientVersion);
+            console.error('Error stack:', (error as Error)?.stack);
             
-            console.error(`Prisma error code: ${prismaCode}`);
-            
-            switch (prismaCode) {
-                case 'P2002':
-                    return res.status(400).json({ 
-                        message: 'A session with these details already exists',
-                        error: errorMessage,
-                        code: prismaCode,
-                        meta: error.meta
-                    });
+            // Handle Prisma-specific errors
+            if (error.code) {
+                const prismaCode = error.code;
+                const errorMessage = error.message || (error as Error)?.message || 'Unknown Prisma error';
                 
-                case 'P2003':
-                    return res.status(400).json({ 
-                        message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
-                        error: errorMessage,
-                        code: prismaCode,
-                        meta: error.meta
-                    });
+                console.error(`Prisma error code: ${prismaCode}`);
                 
-                case 'P1001':
-                case 'P1008':
-                    return res.status(503).json({ 
-                        message: 'Database connection failed. Please try again later.',
-                        error: errorMessage,
-                        code: prismaCode
-                    });
-                
-                case 'P1017':
-                    return res.status(503).json({ 
-                        message: 'Database connection was closed. Please try again.',
-                        error: errorMessage,
-                        code: prismaCode
-                    });
-                
-                default:
-                    // Log unknown Prisma error code for debugging
-                    console.error(`Unknown Prisma error code: ${prismaCode}`);
-                    return res.status(500).json({ 
-                        message: `Database error occurred (Code: ${prismaCode})`,
-                        error: errorMessage,
-                        code: prismaCode,
-                        meta: error.meta,
-                        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-                    });
+                switch (prismaCode) {
+                    case 'P2002':
+                        return res.status(400).json({ 
+                            message: 'A session with these details already exists',
+                            error: errorMessage,
+                            code: prismaCode,
+                            meta: error.meta
+                        });
+                    
+                    case 'P2003':
+                        return res.status(400).json({ 
+                            message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
+                            error: errorMessage,
+                            code: prismaCode,
+                            meta: error.meta
+                        });
+                    
+                    case 'P1001':
+                    case 'P1008':
+                        return res.status(503).json({ 
+                            message: 'Database connection failed. Please try again later.',
+                            error: errorMessage,
+                            code: prismaCode
+                        });
+                    
+                    case 'P1017':
+                        return res.status(503).json({ 
+                            message: 'Database connection was closed. Please try again.',
+                            error: errorMessage,
+                            code: prismaCode
+                        });
+                    
+                    default:
+                        // Log unknown Prisma error code for debugging
+                        console.error(`Unknown Prisma error code: ${prismaCode}`);
+                        try {
+                            return res.status(500).json({ 
+                                message: `Database error occurred (Code: ${prismaCode})`,
+                                error: errorMessage,
+                                code: prismaCode,
+                                meta: error.meta
+                            });
+                        } catch {
+                            return res.status(500).json({ 
+                                message: `Database error occurred (Code: ${prismaCode})`,
+                                error: errorMessage,
+                                code: prismaCode
+                            });
+                        }
+                }
             }
         }
         
         // Handle standard Error objects
         if (error instanceof Error) {
             const errorMessage = error.message || 'Unknown error';
+            
+            console.error('Error name:', error.name);
+            console.error('Error message:', errorMessage);
+            console.error('Error stack:', error.stack);
             
             // Check for common error patterns in message
             if (errorMessage.includes('Foreign key constraint') || errorMessage.includes('ForeignKeyConstraintError')) {
@@ -360,20 +384,17 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             return res.status(500).json({ 
                 message: 'Failed to create session',
                 error: errorMessage,
-                errorName: error.name,
-                stack: error.stack // Include stack trace for debugging
+                errorName: error.name
             });
         }
         
         // Handle non-Error objects (strings, objects, etc.)
         console.error('Non-Error object caught:', error);
-        const errorString = error?.toString() || String(error);
+        const errorString = typeof error === 'string' ? error : (error as Error)?.toString() || String(error);
         return res.status(500).json({ 
             message: 'Failed to create session',
             error: errorString,
-            errorType: typeof error,
-            errorConstructor: error?.constructor?.name,
-            fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+            errorType: typeof error
         });
     }
 };
