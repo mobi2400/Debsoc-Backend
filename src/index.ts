@@ -14,15 +14,10 @@ const PORT = process.env.PORT || 3000;
 
 // CORS configuration - allows requests from any origin with credentials
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    // Allow any origin
-    callback(null, true);
-  },
+  origin: '*', // Allows all domains
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
+  credentials: true // Note: When origin is *, credentials: true may not work as intended in some browsers. The custom function is better if you need this.
 }));
 
 app.use(express.json());
