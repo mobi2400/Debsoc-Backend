@@ -110,9 +110,17 @@ export const createSession = async (req: Request, res: Response, next: NextFunct
 // Mark Attendance for an Existing Session
 export const markAttendance = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('markAttendance called');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+
         const { sessionId, attendanceData } = req.body;
 
         if (!sessionId || !attendanceData || !Array.isArray(attendanceData)) {
+            console.error('Validation failed:', {
+                hasSessionId: !!sessionId,
+                hasAttendanceData: !!attendanceData,
+                isArray: Array.isArray(attendanceData)
+            });
             return res.status(400).json({ message: 'Please provide sessionId and attendanceData (array)' });
         }
 
