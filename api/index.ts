@@ -26,27 +26,31 @@ if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
 
 const app = express();
 
-// CORS configuration - allows requests from any origin with credentials
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        // Allow any origin
-        callback(null, true);
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true
-}));
+// Manual CORS Middleware
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
 
-// Explicitly handle OPTIONS requests
-app.options('*', cors({
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        callback(null, true);
-    },
-    credentials: true
-}));
+    // Allow any origin by echoing it back
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+
+    // Always allow credentials
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Allow common methods
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+
+    // Allow common headers
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    // Handle preflight OPTIONS requests immediately
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    next();
+});
 
 // Increase JSON payload limit for larger requests
 app.use(express.json({ limit: '10mb' }));
