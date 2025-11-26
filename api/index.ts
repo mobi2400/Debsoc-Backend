@@ -11,12 +11,41 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - allows requests from any origin
+// CORS configuration - allow requests from frontend domain
+const allowedOrigins = [
+    'https://www.smvitdebsoc.com',
+    'https://smvitdebsoc.com',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    // Allow from environment variable if set
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+];
+
 app.use(cors({
-    origin: '*', // In production, replace with specific domains
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            // In development, allow all origins for easier testing
+            if (process.env.NODE_ENV === 'development') {
+                callback(null, true);
+            } else {
+                console.warn(`CORS blocked origin: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 
 // Increase JSON payload limit for larger requests
