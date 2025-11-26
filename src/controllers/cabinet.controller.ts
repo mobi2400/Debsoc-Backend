@@ -190,19 +190,7 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         };
         console.log('Attempting to create session with data:', JSON.stringify(logData, null, 2));
 
-        // Test database connection first
-        try {
-            await prisma.$connect();
-            console.log('Database connection successful');
-        } catch (connectError) {
-            console.error('Database connection failed:', connectError);
-            return res.status(503).json({ 
-                message: 'Database connection failed',
-                error: connectError instanceof Error ? connectError.message : 'Unknown connection error'
-            });
-        }
-
-        // Create session - try nested create first, fallback to separate creates if needed
+        // Create session - use transaction for atomicity
         type SessionWithAttendance = {
             id: string;
             sessionDate: Date;
@@ -214,66 +202,50 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         };
         
         let session: SessionWithAttendance;
+        
         try {
-            // If no attendance data, create session without nested create
-            if (!sessionData.attendance || sessionData.attendance.create.length === 0) {
-                console.log('Creating session without attendance records');
-                session = await prisma.session.create({
+            // Use a transaction to ensure atomicity
+            const result = await prisma.$transaction(async (tx) => {
+                // Create the session first
+                const createdSession = await tx.session.create({
                     data: {
                         sessionDate: sessionData.sessionDate,
                         motiontype: sessionData.motiontype,
                         Chair: sessionData.Chair,
                     },
-                    include: { attendance: true },
-                }) as SessionWithAttendance;
-                console.log('Session created successfully (no attendance):', session.id);
-            } else {
-                console.log('Attempting to create session with nested attendance records:', sessionData.attendance.create.length);
-                try {
-                    // Try nested create first
-                    session = await prisma.session.create({
-                        data: sessionData,
-                        include: { attendance: true },
-                    }) as SessionWithAttendance;
-                    console.log('Session created successfully (with nested attendance):', session.id);
-                } catch (nestedError: any) {
-                    console.warn('Nested create failed, trying separate creates:', nestedError?.message);
-                    // Fallback: Create session first, then attendance records
-                    const createdSession = await prisma.session.create({
-                        data: {
-                            sessionDate: sessionData.sessionDate,
-                            motiontype: sessionData.motiontype,
-                            Chair: sessionData.Chair,
-                        },
-                        include: { attendance: true },
+                });
+                
+                console.log('Session created in transaction:', createdSession.id);
+                
+                // Create attendance records if any
+                if (sessionData.attendance && sessionData.attendance.create.length > 0) {
+                    console.log('Creating attendance records:', sessionData.attendance.create.length);
+                    await tx.attendance.createMany({
+                        data: sessionData.attendance.create.map(att => ({
+                            sessionId: createdSession.id,
+                            memberId: att.memberId,
+                            status: att.status
+                        }))
                     });
-                    console.log('Session created, now creating attendance records:', createdSession.id);
-                    
-                    // Create attendance records separately
-                    if (sessionData.attendance && sessionData.attendance.create.length > 0) {
-                        await prisma.attendance.createMany({
-                            data: sessionData.attendance.create.map(att => ({
-                                sessionId: createdSession.id,
-                                memberId: att.memberId,
-                                status: att.status
-                            }))
-                        });
-                        console.log('Attendance records created successfully');
-                        
-                        // Fetch the session again with attendance
-                        const fetchedSession = await prisma.session.findUnique({
-                            where: { id: createdSession.id },
-                            include: { attendance: true }
-                        });
-                        if (!fetchedSession) {
-                            throw new Error('Failed to retrieve created session');
-                        }
-                        session = fetchedSession as SessionWithAttendance;
-                    } else {
-                        session = createdSession as SessionWithAttendance;
-                    }
+                    console.log('Attendance records created in transaction');
                 }
-            }
+                
+                // Fetch the complete session with attendance
+                const completeSession = await tx.session.findUnique({
+                    where: { id: createdSession.id },
+                    include: { attendance: true }
+                });
+                
+                if (!completeSession) {
+                    throw new Error('Failed to retrieve created session');
+                }
+                
+                return completeSession;
+            });
+            
+            session = result as SessionWithAttendance;
+            console.log('Transaction completed successfully. Session ID:', session.id);
+            
         } catch (createError: any) {
             console.error('='.repeat(80));
             console.error('PRISMA CREATE ERROR - Detailed Information:');
