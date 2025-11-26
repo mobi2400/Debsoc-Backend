@@ -16,7 +16,7 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 if (missingEnvVars.length > 0) {
     console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
     console.error('Please set these variables in your .env file or environment configuration.');
-    process.exit(1);
+    // Do not exit, so we can return a proper HTTP error with CORS headers
 }
 
 // Validate JWT_SECRET strength (should be at least 32 characters)
@@ -43,8 +43,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     // Allow common methods
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 
-    // Allow common headers
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, User-Agent');
+    // Allow common headers - dynamically reflect requested headers to support all clients
+    const requestedHeaders = req.headers['access-control-request-headers'];
+    if (requestedHeaders) {
+        res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
+    } else {
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, User-Agent');
+    }
 
     // Handle preflight OPTIONS requests immediately
     if (req.method === 'OPTIONS') {
