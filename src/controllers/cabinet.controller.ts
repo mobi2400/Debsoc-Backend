@@ -67,20 +67,127 @@ export const loginCabinet = async (req: Request, res: Response, next: NextFuncti
 export const markAttendance = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { sessionDate, motiontype, Chair, attendanceData } = req.body;
-        if (!sessionDate || !motiontype || !Chair || !Array.isArray(attendanceData)) {
-            return res.status(400).json({ message: 'Please provide all session details and attendance data' });
+        
+        console.log('Received markAttendance request:', { sessionDate, motiontype, Chair, attendanceDataCount: attendanceData?.length });
+        
+        // Validate required fields
+        if (!sessionDate || !motiontype || !Chair) {
+            return res.status(400).json({ message: 'Please provide sessionDate, motiontype, and Chair' });
         }
+        
+        if (!Array.isArray(attendanceData)) {
+            return res.status(400).json({ message: 'attendanceData must be an array' });
+        }
+
+        // Handle date conversion - datetime-local format (YYYY-MM-DDTHH:mm) needs proper conversion
+        let parsedDate: Date;
+        try {
+            // If the date string doesn't have timezone info, treat it as local time
+            if (sessionDate.includes('T') && !sessionDate.includes('Z') && !sessionDate.includes('+') && !sessionDate.includes('-', 10)) {
+                // Format: YYYY-MM-DDTHH:mm (datetime-local format)
+                parsedDate = new Date(sessionDate);
+            } else {
+                // Already in ISO format or has timezone
+                parsedDate = new Date(sessionDate);
+            }
+            
+            if (isNaN(parsedDate.getTime())) {
+                return res.status(400).json({ 
+                    message: `Invalid sessionDate format: "${sessionDate}". Please use ISO 8601 format (e.g., 2025-11-26T14:00:00Z or 2025-11-26T14:00)` 
+                });
+            }
+        } catch (dateError) {
+            return res.status(400).json({ 
+                message: `Invalid sessionDate format: "${sessionDate}". Error: ${dateError instanceof Error ? dateError.message : 'Unknown error'}` 
+            });
+        }
+
+        // Allow empty attendance data - session can be created without attendance records
+        // But if attendanceData is provided, validate it
+        if (attendanceData.length > 0) {
+            // Validate each attendance record
+            for (let i = 0; i < attendanceData.length; i++) {
+                const rec = attendanceData[i];
+                if (!rec || typeof rec !== 'object') {
+                    return res.status(400).json({ message: `Attendance record at index ${i} is invalid` });
+                }
+                if (!rec.memberId || typeof rec.memberId !== 'string') {
+                    return res.status(400).json({ message: `Attendance record at index ${i} must have a valid memberId (string)` });
+                }
+                if (!rec.status || (rec.status !== 'Present' && rec.status !== 'Absent')) {
+                    return res.status(400).json({ message: `Attendance record at index ${i} must have status as "Present" or "Absent"` });
+                }
+            }
+
+            // Check if all member IDs exist in the database
+            const memberIds = attendanceData.map((rec: { memberId: string }) => rec.memberId);
+            const uniqueMemberIds = [...new Set(memberIds)]; // Remove duplicates
+            
+            const existingMembers = await prisma.member.findMany({
+                where: { id: { in: uniqueMemberIds } },
+                select: { id: true }
+            });
+
+            const existingMemberIds = existingMembers.map(m => m.id);
+            const invalidMemberIds = uniqueMemberIds.filter(id => !existingMemberIds.includes(id));
+
+            if (invalidMemberIds.length > 0) {
+                return res.status(400).json({ 
+                    message: `Invalid member IDs: ${invalidMemberIds.join(', ')}. These members do not exist in the database.` 
+                });
+            }
+        }
+
+        // Create session with attendance records (if any)
+        const sessionData: any = {
+            sessionDate: parsedDate,
+            motiontype: motiontype.trim(),
+            Chair: Chair.trim(),
+        };
+
+        // Only add attendance if there are records
+        if (attendanceData.length > 0) {
+            sessionData.attendance = {
+                create: attendanceData.map((rec: { memberId: string; status: string }) => ({
+                    memberId: rec.memberId,
+                    status: rec.status
+                }))
+            };
+        }
+
         const session = await prisma.session.create({
-            data: {
-                sessionDate: new Date(sessionDate),
-                motiontype,
-                Chair,
-                attendance: { create: attendanceData.map((rec: { memberId: string; status: string }) => ({ memberId: rec.memberId, status: rec.status })) },
-            },
+            data: sessionData,
             include: { attendance: true },
         });
+        
+        console.log('Session created successfully:', session.id);
         res.status(201).json({ message: 'Session attendance marked successfully', session });
     } catch (error) {
+        console.error('Error in markAttendance:', error);
+        // Handle Prisma-specific errors
+        if (error instanceof Error) {
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            
+            if (error.message.includes('Foreign key constraint') || error.message.includes('ForeignKeyConstraintError')) {
+                return res.status(400).json({ 
+                    message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
+                    details: error.message 
+                });
+            }
+            if (error.message.includes('Unique constraint') || error.message.includes('UniqueConstraintError')) {
+                return res.status(400).json({ 
+                    message: 'A session with these details already exists',
+                    details: error.message 
+                });
+            }
+            // Return the actual error message for debugging
+            return res.status(500).json({ 
+                message: 'Failed to create session',
+                error: error.message,
+                details: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+            });
+        }
         next(error);
     }
 };

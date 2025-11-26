@@ -38,8 +38,20 @@ app.use('/api/cabinet', cabinetRoutes);
 app.use('/api/member', memberRoutes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('Error stack:', err.stack);
+  console.error('Error message:', err.message);
+  console.error('Request path:', req.path);
+  console.error('Request body:', req.body);
+  
+  // Return more detailed error in development
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  res.status(500).json({ 
+    error: 'Internal server error',
+    ...(isDevelopment && { 
+      message: err.message,
+      stack: err.stack 
+    })
+  });
 });
 
 app.listen(PORT, () => {
