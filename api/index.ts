@@ -19,7 +19,18 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json());
+// Increase JSON payload limit for larger requests
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('Request body keys:', Object.keys(req.body));
+    }
+    next();
+});
 
 app.get('/', (req: Request, res: Response) => {
     res.json({ message: 'Debsoc Backend API', version: '1.0.0' });
@@ -31,19 +42,34 @@ app.use('/api/president', presidentRoutes);
 app.use('/api/cabinet', cabinetRoutes);
 app.use('/api/member', memberRoutes);
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error('Error stack:', err.stack);
-    console.error('Error message:', err.message);
+// Error handling middleware - must be last
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('='.repeat(50));
+    console.error('ERROR CAUGHT IN MIDDLEWARE');
+    console.error('Error type:', typeof err);
+    console.error('Error constructor:', err?.constructor?.name);
+    console.error('Error name:', err?.name);
+    console.error('Error message:', err?.message);
+    console.error('Error stack:', err?.stack);
+    console.error('Request method:', req.method);
     console.error('Request path:', req.path);
-    console.error('Request body:', req.body);
+    console.error('Request URL:', req.url);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    console.error('='.repeat(50));
     
-    // Return more detailed error in development
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ 
+    // Don't send response if headers already sent
+    if (res.headersSent) {
+        return next(err);
+    }
+    
+    // Return detailed error (even in production for now to help debug)
+    const statusCode = err.statusCode || err.status || 500;
+    res.status(statusCode).json({ 
         error: 'Internal server error',
-        ...(isDevelopment && { 
-            message: err.message,
-            stack: err.stack 
+        message: err?.message || 'An unexpected error occurred',
+        ...(process.env.NODE_ENV !== 'production' && { 
+            stack: err?.stack,
+            details: err
         })
     });
 });

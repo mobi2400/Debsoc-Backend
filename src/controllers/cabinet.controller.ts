@@ -66,9 +66,26 @@ export const loginCabinet = async (req: Request, res: Response, next: NextFuncti
 // Mark Attendance (Create Session and Record Attendance)
 export const markAttendance = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // Log the full request for debugging
+        console.log('Received markAttendance request');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Request headers:', req.headers);
+        
         const { sessionDate, motiontype, Chair, attendanceData } = req.body;
         
-        console.log('Received markAttendance request:', { sessionDate, motiontype, Chair, attendanceDataCount: attendanceData?.length });
+        // Check if body was parsed correctly
+        if (!req.body || typeof req.body !== 'object') {
+            console.error('Invalid request body:', req.body);
+            return res.status(400).json({ message: 'Invalid request body. Expected JSON object.' });
+        }
+        
+        console.log('Parsed request data:', { 
+            sessionDate, 
+            motiontype, 
+            Chair, 
+            attendanceDataCount: attendanceData?.length,
+            attendanceDataType: Array.isArray(attendanceData) ? 'array' : typeof attendanceData
+        });
         
         // Validate required fields
         if (!sessionDate || !motiontype || !Chair) {
@@ -155,6 +172,7 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             };
         }
 
+        // Create session with attendance records (if any)
         const session = await prisma.session.create({
             data: sessionData,
             include: { attendance: true },
@@ -164,31 +182,62 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         res.status(201).json({ message: 'Session attendance marked successfully', session });
     } catch (error) {
         console.error('Error in markAttendance:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error constructor:', error?.constructor?.name);
+        
         // Handle Prisma-specific errors
         if (error instanceof Error) {
             console.error('Error name:', error.name);
             console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             
-            if (error.message.includes('Foreign key constraint') || error.message.includes('ForeignKeyConstraintError')) {
-                return res.status(400).json({ 
-                    message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
-                    details: error.message 
-                });
-            }
-            if (error.message.includes('Unique constraint') || error.message.includes('UniqueConstraintError')) {
+            // Prisma error codes
+            const errorMessage = error.message || '';
+            
+            if (errorMessage.includes('P2002') || errorMessage.includes('Unique constraint')) {
                 return res.status(400).json({ 
                     message: 'A session with these details already exists',
-                    details: error.message 
+                    error: errorMessage 
                 });
             }
-            // Return the actual error message for debugging
+            
+            if (errorMessage.includes('P2003') || errorMessage.includes('Foreign key constraint') || errorMessage.includes('ForeignKeyConstraintError')) {
+                return res.status(400).json({ 
+                    message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
+                    error: errorMessage 
+                });
+            }
+            
+            if (errorMessage.includes('P1001') || errorMessage.includes('Can\'t reach database server')) {
+                return res.status(503).json({ 
+                    message: 'Database connection failed. Please try again later.',
+                    error: errorMessage 
+                });
+            }
+            
+            if (errorMessage.includes('P1017') || errorMessage.includes('Server has closed the connection')) {
+                return res.status(503).json({ 
+                    message: 'Database connection was closed. Please try again.',
+                    error: errorMessage 
+                });
+            }
+            
+            // Return detailed error for debugging (even in production for now to help diagnose)
             return res.status(500).json({ 
                 message: 'Failed to create session',
-                error: error.message,
-                details: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+                error: errorMessage,
+                errorName: error.name,
+                ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
             });
         }
-        next(error);
+        
+        // Handle non-Error objects
+        console.error('Non-Error object caught:', error);
+        return res.status(500).json({ 
+            message: 'Failed to create session',
+            error: 'Unknown error occurred',
+            details: String(error)
+        });
     }
 };
 
