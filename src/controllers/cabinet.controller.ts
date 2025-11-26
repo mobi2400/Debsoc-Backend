@@ -63,339 +63,95 @@ export const loginCabinet = async (req: Request, res: Response, next: NextFuncti
     }
 };
 
-// Mark Attendance (Create Session and Record Attendance)
-export const markAttendance = async (req: Request, res: Response, next: NextFunction) => {
+// Create Session
+export const createSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Log the full request for debugging
-        console.log('Received markAttendance request');
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
-        console.log('Request headers:', req.headers);
-        
-        const { sessionDate, motiontype, Chair, attendanceData } = req.body;
-        
-        // Check if body was parsed correctly
-        if (!req.body || typeof req.body !== 'object') {
-            console.error('Invalid request body:', req.body);
-            return res.status(400).json({ message: 'Invalid request body. Expected JSON object.' });
-        }
-        
-        console.log('Parsed request data:', { 
-            sessionDate, 
-            motiontype, 
-            Chair, 
-            attendanceDataCount: attendanceData?.length,
-            attendanceDataType: Array.isArray(attendanceData) ? 'array' : typeof attendanceData
-        });
-        
+        const { sessionDate, motiontype, Chair } = req.body;
+
         // Validate required fields
         if (!sessionDate || !motiontype || !Chair) {
             return res.status(400).json({ message: 'Please provide sessionDate, motiontype, and Chair' });
         }
-        
-        if (!Array.isArray(attendanceData)) {
-            return res.status(400).json({ message: 'attendanceData must be an array' });
-        }
 
-        // Handle date conversion - datetime-local format (YYYY-MM-DDTHH:mm) needs proper conversion
+        // Handle date conversion
         let parsedDate: Date;
         try {
-            // If the date string doesn't have timezone info, treat it as local time
             if (sessionDate.includes('T') && !sessionDate.includes('Z') && !sessionDate.includes('+') && !sessionDate.includes('-', 10)) {
-                // Format: YYYY-MM-DDTHH:mm (datetime-local format)
                 parsedDate = new Date(sessionDate);
             } else {
-                // Already in ISO format or has timezone
                 parsedDate = new Date(sessionDate);
             }
-            
+
             if (isNaN(parsedDate.getTime())) {
-                return res.status(400).json({ 
-                    message: `Invalid sessionDate format: "${sessionDate}". Please use ISO 8601 format (e.g., 2025-11-26T14:00:00Z or 2025-11-26T14:00)` 
+                return res.status(400).json({
+                    message: `Invalid sessionDate format: "${sessionDate}". Please use ISO 8601 format.`
                 });
             }
         } catch (dateError) {
-            return res.status(400).json({ 
-                message: `Invalid sessionDate format: "${sessionDate}". Error: ${dateError instanceof Error ? dateError.message : 'Unknown error'}` 
+            return res.status(400).json({
+                message: `Invalid sessionDate format. Error: ${dateError instanceof Error ? dateError.message : 'Unknown error'}`
             });
         }
 
-        // Allow empty attendance data - session can be created without attendance records
-        // But if attendanceData is provided, validate it
-        if (attendanceData.length > 0) {
-            // Validate each attendance record
-            for (let i = 0; i < attendanceData.length; i++) {
-                const rec = attendanceData[i];
-                if (!rec || typeof rec !== 'object') {
-                    return res.status(400).json({ message: `Attendance record at index ${i} is invalid` });
-                }
-                if (!rec.memberId || typeof rec.memberId !== 'string') {
-                    return res.status(400).json({ message: `Attendance record at index ${i} must have a valid memberId (string)` });
-                }
-                if (!rec.status || (rec.status !== 'Present' && rec.status !== 'Absent')) {
-                    return res.status(400).json({ message: `Attendance record at index ${i} must have status as "Present" or "Absent"` });
-                }
+        const session = await prisma.session.create({
+            data: {
+                sessionDate: parsedDate,
+                motiontype: motiontype.trim(),
+                Chair: Chair.trim(),
+            },
+        });
+
+        res.status(201).json({ message: 'Session created successfully', session });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Mark Attendance for an Existing Session
+export const markAttendance = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { sessionId, attendanceData } = req.body;
+
+        if (!sessionId || !attendanceData || !Array.isArray(attendanceData)) {
+            return res.status(400).json({ message: 'Please provide sessionId and attendanceData (array)' });
+        }
+
+        // Validate session exists
+        const session = await prisma.session.findUnique({ where: { id: sessionId } });
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        // Validate attendance records
+        for (let i = 0; i < attendanceData.length; i++) {
+            const rec = attendanceData[i];
+            if (!rec.memberId || typeof rec.memberId !== 'string') {
+                return res.status(400).json({ message: `Invalid memberId at index ${i}` });
             }
-
-            // Check if all member IDs exist in the database
-            const memberIds = attendanceData.map((rec: { memberId: string }) => rec.memberId);
-            const uniqueMemberIds = [...new Set(memberIds)]; // Remove duplicates
-            
-            const existingMembers = await prisma.member.findMany({
-                where: { id: { in: uniqueMemberIds } },
-                select: { id: true }
-            });
-
-            const existingMemberIds = existingMembers.map(m => m.id);
-            const invalidMemberIds = uniqueMemberIds.filter(id => !existingMemberIds.includes(id));
-
-            if (invalidMemberIds.length > 0) {
-                return res.status(400).json({ 
-                    message: `Invalid member IDs: ${invalidMemberIds.join(', ')}. These members do not exist in the database.` 
-                });
+            if (!rec.status || (rec.status !== 'Present' && rec.status !== 'Absent')) {
+                return res.status(400).json({ message: `Invalid status at index ${i}` });
             }
         }
 
-        // Create session with attendance records (if any)
-        const sessionData: {
-            sessionDate: Date;
-            motiontype: string;
-            Chair: string;
-            attendance?: {
-                create: Array<{ memberId: string; status: string }>;
-            };
-        } = {
-            sessionDate: parsedDate,
-            motiontype: motiontype.trim(),
-            Chair: Chair.trim(),
-        };
+        // Create attendance records
+        // We use a transaction to ensure all or nothing
+        const result = await prisma.$transaction(async (tx) => {
+            // Optional: Delete existing attendance for this session if you want to overwrite
+            // await tx.attendance.deleteMany({ where: { sessionId } });
 
-        // Only add attendance if there are records
-        if (attendanceData.length > 0) {
-            sessionData.attendance = {
-                create: attendanceData.map((rec: { memberId: string; status: string }) => ({
+            const createdAttendance = await tx.attendance.createMany({
+                data: attendanceData.map((rec: { memberId: string; status: string }) => ({
+                    sessionId,
                     memberId: rec.memberId,
                     status: rec.status
                 }))
-            };
-        }
-
-        // Log the data structure we're about to send to Prisma
-        const logData = {
-            sessionDate: sessionData.sessionDate.toISOString(),
-            motiontype: sessionData.motiontype,
-            Chair: sessionData.Chair,
-            hasAttendance: !!sessionData.attendance,
-            attendanceCount: sessionData.attendance?.create.length || 0,
-            attendanceData: sessionData.attendance?.create || []
-        };
-        console.log('Attempting to create session with data:', JSON.stringify(logData, null, 2));
-
-        // Create session - use transaction for atomicity
-        type SessionWithAttendance = {
-            id: string;
-            sessionDate: Date;
-            motiontype: string;
-            Chair: string;
-            attendance: Array<{ id: string; memberId: string; status: string }>;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        
-        let session: SessionWithAttendance;
-        
-        try {
-            // Use a transaction to ensure atomicity
-            const result = await prisma.$transaction(async (tx) => {
-                // Create the session first
-                const createdSession = await tx.session.create({
-                    data: {
-                        sessionDate: sessionData.sessionDate,
-                        motiontype: sessionData.motiontype,
-                        Chair: sessionData.Chair,
-                    },
-                });
-                
-                console.log('Session created in transaction:', createdSession.id);
-                
-                // Create attendance records if any
-                if (sessionData.attendance && sessionData.attendance.create.length > 0) {
-                    console.log('Creating attendance records:', sessionData.attendance.create.length);
-                    await tx.attendance.createMany({
-                        data: sessionData.attendance.create.map(att => ({
-                            sessionId: createdSession.id,
-                            memberId: att.memberId,
-                            status: att.status
-                        }))
-                    });
-                    console.log('Attendance records created in transaction');
-                }
-                
-                // Fetch the complete session with attendance
-                const completeSession = await tx.session.findUnique({
-                    where: { id: createdSession.id },
-                    include: { attendance: true }
-                });
-                
-                if (!completeSession) {
-                    throw new Error('Failed to retrieve created session');
-                }
-                
-                return completeSession;
             });
-            
-            session = result as SessionWithAttendance;
-            console.log('Transaction completed successfully. Session ID:', session.id);
-            
-        } catch (createError: unknown) {
-            console.error('='.repeat(80));
-            console.error('PRISMA CREATE ERROR - Detailed Information:');
-            console.error('Error type:', typeof createError);
-            console.error('Error constructor:', (createError as Error)?.constructor?.name);
-            console.error('Error name:', (createError as Error)?.name);
-            console.error('Error code:', (createError as { code?: string })?.code);
-            console.error('Error message:', (createError as Error)?.message);
-            console.error('Error meta:', JSON.stringify((createError as { meta?: unknown })?.meta, null, 2));
-            console.error('Error clientVersion:', (createError as { clientVersion?: string })?.clientVersion);
-            console.error('Error stack:', (createError as Error)?.stack);
-            
-            // Try to stringify the full error
-            try {
-                console.error('Full error object:', JSON.stringify(createError, Object.getOwnPropertyNames(createError as object), 2));
-            } catch (stringifyError) {
-                console.error('Could not stringify error:', stringifyError);
-            }
-            console.error('='.repeat(80));
-            throw createError; // Re-throw to be caught by outer catch
-        }
-        
-        res.status(201).json({ message: 'Session attendance marked successfully', session });
-    } catch (error: unknown) {
-        console.error('='.repeat(80));
-        console.error('ERROR in markAttendance - Full Details:');
-        console.error('Error type:', typeof error);
-        
-        // Type guard for Prisma errors
-        interface PrismaError {
-            code?: string;
-            message?: string;
-            meta?: unknown;
-            clientVersion?: string;
-        }
-        
-        const isPrismaError = (err: unknown): err is PrismaError => {
-            return typeof err === 'object' && err !== null && 'code' in err;
-        };
-        
-        if (isPrismaError(error)) {
-            console.error('Error constructor:', (error as Error)?.constructor?.name);
-            console.error('Error name:', (error as Error)?.name);
-            console.error('Error message:', error.message || (error as Error)?.message);
-            console.error('Error code:', error.code);
-            console.error('Error meta:', JSON.stringify(error.meta, null, 2));
-            console.error('Error clientVersion:', error.clientVersion);
-            console.error('Error stack:', (error as Error)?.stack);
-            
-            // Handle Prisma-specific errors
-            if (error.code) {
-                const prismaCode = error.code;
-                const errorMessage = error.message || (error as Error)?.message || 'Unknown Prisma error';
-                
-                console.error(`Prisma error code: ${prismaCode}`);
-                
-                switch (prismaCode) {
-                    case 'P2002':
-                        return res.status(400).json({ 
-                            message: 'A session with these details already exists',
-                            error: errorMessage,
-                            code: prismaCode,
-                            meta: error.meta
-                        });
-                    
-                    case 'P2003':
-                        return res.status(400).json({ 
-                            message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
-                            error: errorMessage,
-                            code: prismaCode,
-                            meta: error.meta
-                        });
-                    
-                    case 'P1001':
-                    case 'P1008':
-                        return res.status(503).json({ 
-                            message: 'Database connection failed. Please try again later.',
-                            error: errorMessage,
-                            code: prismaCode
-                        });
-                    
-                    case 'P1017':
-                        return res.status(503).json({ 
-                            message: 'Database connection was closed. Please try again.',
-                            error: errorMessage,
-                            code: prismaCode
-                        });
-                    
-                    default:
-                        // Log unknown Prisma error code for debugging
-                        console.error(`Unknown Prisma error code: ${prismaCode}`);
-                        try {
-                            return res.status(500).json({ 
-                                message: `Database error occurred (Code: ${prismaCode})`,
-                                error: errorMessage,
-                                code: prismaCode,
-                                meta: error.meta
-                            });
-                        } catch {
-                            return res.status(500).json({ 
-                                message: `Database error occurred (Code: ${prismaCode})`,
-                                error: errorMessage,
-                                code: prismaCode
-                            });
-                        }
-                }
-            }
-        }
-        
-        // Handle standard Error objects
-        if (error instanceof Error) {
-            const errorMessage = error.message || 'Unknown error';
-            
-            console.error('Error name:', error.name);
-            console.error('Error message:', errorMessage);
-            console.error('Error stack:', error.stack);
-            
-            // Check for common error patterns in message
-            if (errorMessage.includes('Foreign key constraint') || errorMessage.includes('ForeignKeyConstraintError')) {
-                return res.status(400).json({ 
-                    message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
-                    error: errorMessage,
-                    errorName: error.name
-                });
-            }
-            
-            if (errorMessage.includes('Unique constraint') || errorMessage.includes('UniqueConstraintError')) {
-                return res.status(400).json({ 
-                    message: 'A session with these details already exists',
-                    error: errorMessage,
-                    errorName: error.name
-                });
-            }
-            
-            // Return detailed error for debugging
-            return res.status(500).json({ 
-                message: 'Failed to create session',
-                error: errorMessage,
-                errorName: error.name
-            });
-        }
-        
-        // Handle non-Error objects (strings, objects, etc.)
-        console.error('Non-Error object caught:', error);
-        const errorString = typeof error === 'string' ? error : (error as Error)?.toString() || String(error);
-        return res.status(500).json({ 
-            message: 'Failed to create session',
-            error: errorString,
-            errorType: typeof error
+            return createdAttendance;
         });
+
+        res.status(201).json({ message: 'Attendance marked successfully', count: result.count });
+    } catch (error) {
+        next(error);
     }
 };
 

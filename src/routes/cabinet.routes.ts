@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     registerCabinet,
     loginCabinet,
+    createSession,
     markAttendance,
     getAssignedTasks,
     giveAnonymousFeedback,
@@ -20,6 +21,7 @@ router.post('/register', registerCabinet);
 router.post('/login', loginCabinet);
 
 // Protected routes - Cabinet only (requires verification)
+router.post('/session/create', authMiddleware, authorizeRoles(['cabinet']), requireVerification, createSession);
 router.post('/attendance/mark', authMiddleware, authorizeRoles(['cabinet']), requireVerification, markAttendance);
 router.get('/tasks', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getAssignedTasks);
 router.post('/feedback/give', authMiddleware, authorizeRoles(['cabinet']), requireVerification, giveAnonymousFeedback);
