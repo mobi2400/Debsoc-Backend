@@ -12,11 +12,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS configuration - allows requests from any origin
+// CORS configuration - allows requests from any origin with credentials
 app.use(cors({
-  origin: '*', // In production, replace with specific domains
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    // Allow any origin
+    callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
 
@@ -42,14 +47,14 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Error message:', err.message);
   console.error('Request path:', req.path);
   console.error('Request body:', req.body);
-  
+
   // Return more detailed error in development
   const isDevelopment = process.env.NODE_ENV !== 'production';
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Internal server error',
-    ...(isDevelopment && { 
+    ...(isDevelopment && {
       message: err.message,
-      stack: err.stack 
+      stack: err.stack
     })
   });
 });
