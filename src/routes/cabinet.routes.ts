@@ -21,14 +21,14 @@ router.post('/register', registerCabinet);
 router.post('/login', loginCabinet);
 
 // Protected routes - Cabinet only (requires verification)
-router.post('/session/create', authMiddleware, authorizeRoles(['cabinet']), requireVerification, createSession);
-router.post('/attendance/mark', authMiddleware, authorizeRoles(['cabinet']), requireVerification, markAttendance);
-router.get('/tasks', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getAssignedTasks);
+router.post('/session/create', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, createSession);
+router.post('/attendance/mark', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, markAttendance);
+router.get('/tasks', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, getAssignedTasks);
 router.post('/feedback/give', authMiddleware, authorizeRoles(['cabinet']), requireVerification, giveAnonymousFeedback);
-router.get('/sessions', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSessionReports);
+router.get('/sessions', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, getSessionReports);
 router.post('/messages/president', authMiddleware, authorizeRoles(['cabinet']), requireVerification, giveAnonymousMessageToPresident);
-router.get('/dashboard', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getDashboardData);
-router.get('/messages/sent', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSentMessages);
-router.get('/feedback/sent', authMiddleware, authorizeRoles(['cabinet']), requireVerification, getSentFeedback);
+router.get('/dashboard', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, getDashboardData);
+router.get('/messages/sent', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, getSentMessages);
+router.get('/feedback/sent', authMiddleware, authorizeRoles(['cabinet', 'President']), requireVerification, getSentFeedback);
 
 export default router;

@@ -95,12 +95,10 @@ export const getMyAttendance = async (req: Request, res: Response, next: NextFun
             include: {
                 session: true,
             },
-            orderBy: {
-                session: {
-                    sessionDate: 'desc',
-                },
-            },
         });
+
+        // Sort by session date descending in JavaScript to avoid Prisma relation sorting issues
+        attendance.sort((a, b) => new Date(b.session.sessionDate).getTime() - new Date(a.session.sessionDate).getTime());
 
         res.status(200).json({ attendance });
     } catch (error) {
