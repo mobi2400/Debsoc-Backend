@@ -9,47 +9,35 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// For serverless environments (Vercel), use direct connection
-// For traditional servers, use connection pooling
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-
 let prismaInstance: PrismaClient;
 
 try {
-  if (isServerless) {
-    // Serverless: Use direct connection (no pooling)
-    prismaInstance = globalForPrisma.prisma ??
-      new PrismaClient({
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-      });
-  } else {
-    // Traditional server: Use connection pooling
-    // Only attempt to create pool if DATABASE_URL is present
-    if (!process.env.DATABASE_URL) {
-      console.warn('DATABASE_URL not found, skipping connection pool creation');
-      // Fallback to direct connection or throw to be caught
-      prismaInstance = new PrismaClient();
-    } else {
-      const pool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
-        max: 10, // Maximum number of clients in the pool
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      });
+  const connectionString = process.env.DATABASE_URL;
 
-      const adapter = new PrismaPg(pool);
-
-      prismaInstance = globalForPrisma.prisma ??
-        new PrismaClient({
-          adapter,
-          log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-        });
-    }
+  if (!connectionString) {
+    console.warn('DATABASE_URL is not defined, Prisma Client initialization may fail.');
   }
+
+  // Configure pool
+  // In serverless environments (Vercel), we limit the pool size to avoid exhausting connections
+  // or use a direct connection if preferred, but adapter-pg requires a pool.
+  const pool = new pg.Pool({
+    connectionString,
+    max: process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME ? 1 : 10
+  });
+
+  const adapter = new PrismaPg(pool);
+
+  prismaInstance = globalForPrisma.prisma ?? new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+
 } catch (error) {
   console.error('Failed to initialize Prisma Client:', error);
-  // Create a minimal client that will likely fail on query but allow app startup
-  prismaInstance = new PrismaClient();
+  // If initialization fails, we can't really recover if the client requires an adapter.
+  // We'll throw to make the error visible.
+  throw error;
 }
 
 export const prisma = prismaInstance;
