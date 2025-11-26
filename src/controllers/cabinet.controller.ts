@@ -180,63 +180,108 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         
         console.log('Session created successfully:', session.id);
         res.status(201).json({ message: 'Session attendance marked successfully', session });
-    } catch (error) {
-        console.error('Error in markAttendance:', error);
+    } catch (error: any) {
+        console.error('='.repeat(80));
+        console.error('ERROR in markAttendance - Full Details:');
         console.error('Error type:', typeof error);
         console.error('Error constructor:', error?.constructor?.name);
+        console.error('Error name:', error?.name);
+        console.error('Error message:', error?.message);
+        console.error('Error code:', error?.code);
+        console.error('Error meta:', JSON.stringify(error?.meta, null, 2));
+        console.error('Error stack:', error?.stack);
+        console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        console.error('='.repeat(80));
         
         // Handle Prisma-specific errors
-        if (error instanceof Error) {
-            console.error('Error name:', error.name);
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
+        // Prisma errors have a 'code' property (e.g., 'P2002', 'P2003', etc.)
+        if (error?.code) {
+            const prismaCode = error.code;
+            const errorMessage = error.message || 'Unknown Prisma error';
             
-            // Prisma error codes
-            const errorMessage = error.message || '';
+            console.error(`Prisma error code: ${prismaCode}`);
             
-            if (errorMessage.includes('P2002') || errorMessage.includes('Unique constraint')) {
-                return res.status(400).json({ 
-                    message: 'A session with these details already exists',
-                    error: errorMessage 
-                });
+            switch (prismaCode) {
+                case 'P2002':
+                    return res.status(400).json({ 
+                        message: 'A session with these details already exists',
+                        error: errorMessage,
+                        code: prismaCode,
+                        meta: error.meta
+                    });
+                
+                case 'P2003':
+                    return res.status(400).json({ 
+                        message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
+                        error: errorMessage,
+                        code: prismaCode,
+                        meta: error.meta
+                    });
+                
+                case 'P1001':
+                case 'P1008':
+                    return res.status(503).json({ 
+                        message: 'Database connection failed. Please try again later.',
+                        error: errorMessage,
+                        code: prismaCode
+                    });
+                
+                case 'P1017':
+                    return res.status(503).json({ 
+                        message: 'Database connection was closed. Please try again.',
+                        error: errorMessage,
+                        code: prismaCode
+                    });
+                
+                default:
+                    return res.status(500).json({ 
+                        message: 'Database error occurred',
+                        error: errorMessage,
+                        code: prismaCode,
+                        meta: error.meta
+                    });
             }
+        }
+        
+        // Handle standard Error objects
+        if (error instanceof Error) {
+            const errorMessage = error.message || 'Unknown error';
             
-            if (errorMessage.includes('P2003') || errorMessage.includes('Foreign key constraint') || errorMessage.includes('ForeignKeyConstraintError')) {
+            // Check for common error patterns in message
+            if (errorMessage.includes('Foreign key constraint') || errorMessage.includes('ForeignKeyConstraintError')) {
                 return res.status(400).json({ 
                     message: 'One or more member IDs are invalid. Please ensure all member IDs exist in the database.',
-                    error: errorMessage 
+                    error: errorMessage,
+                    errorName: error.name
                 });
             }
             
-            if (errorMessage.includes('P1001') || errorMessage.includes('Can\'t reach database server')) {
-                return res.status(503).json({ 
-                    message: 'Database connection failed. Please try again later.',
-                    error: errorMessage 
+            if (errorMessage.includes('Unique constraint') || errorMessage.includes('UniqueConstraintError')) {
+                return res.status(400).json({ 
+                    message: 'A session with these details already exists',
+                    error: errorMessage,
+                    errorName: error.name
                 });
             }
             
-            if (errorMessage.includes('P1017') || errorMessage.includes('Server has closed the connection')) {
-                return res.status(503).json({ 
-                    message: 'Database connection was closed. Please try again.',
-                    error: errorMessage 
-                });
-            }
-            
-            // Return detailed error for debugging (even in production for now to help diagnose)
+            // Return detailed error for debugging
             return res.status(500).json({ 
                 message: 'Failed to create session',
                 error: errorMessage,
                 errorName: error.name,
-                ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+                stack: error.stack // Include stack trace for debugging
             });
         }
         
-        // Handle non-Error objects
+        // Handle non-Error objects (strings, objects, etc.)
         console.error('Non-Error object caught:', error);
+        const errorString = error?.toString() || String(error);
         return res.status(500).json({ 
             message: 'Failed to create session',
-            error: 'Unknown error occurred',
-            details: String(error)
+            error: errorString,
+            errorType: typeof error,
+            errorConstructor: error?.constructor?.name,
+            fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
         });
     }
 };
