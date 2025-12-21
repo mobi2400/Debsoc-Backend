@@ -49,16 +49,17 @@ model Session {
 }
 
 model Attendance {
-  id        String   @id @default(uuid())
-  sessionId String
-  session   Session  @relation(fields: [sessionId], references: [id])
-  memberId  String?
-  member    Member?  @relation(fields: [memberId], references: [id])
-  status    String // "Present" or "Absent"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  cabinet   cabinet? @relation(fields: [cabinetId], references: [id])
-  cabinetId String?
+  id           String   @id @default(uuid())
+  sessionId    String
+  session      Session  @relation(fields: [sessionId], references: [id])
+  memberId     String?
+  member       Member?  @relation(fields: [memberId], references: [id])
+  status       String // "Present" or "Absent"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  cabinet      cabinet? @relation(fields: [cabinetId], references: [id])
+  cabinetId    String?
+  speakerScore Float?
 }
 
 model cabinet {

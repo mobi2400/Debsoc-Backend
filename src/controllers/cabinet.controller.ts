@@ -149,6 +149,13 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             if (!rec.status || (rec.status !== 'Present' && rec.status !== 'Absent')) {
                 return res.status(400).json({ message: `Invalid status at index ${i}` });
             }
+
+            // Optional: You could enforce speakerScore presence if status is Present
+            if (rec.status === 'Present' && rec.speakerScore !== undefined) {
+                if (typeof rec.speakerScore !== 'number') {
+                    return res.status(400).json({ message: `Invalid speakerScore at index ${i}: Must be a number` });
+                }
+            }
         }
 
         // Create attendance records
@@ -158,11 +165,12 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             // await tx.attendance.deleteMany({ where: { sessionId } });
 
             const createdAttendance = await tx.attendance.createMany({
-                data: attendanceData.map((rec: { memberId?: string; cabinetId?: string; status: string }) => ({
+                data: attendanceData.map((rec: { memberId?: string; cabinetId?: string; status: string; speakerScore?: number }) => ({
                     sessionId,
                     memberId: rec.memberId || null,
                     cabinetId: rec.cabinetId || null,
-                    status: rec.status
+                    status: rec.status,
+                    speakerScore: rec.speakerScore !== undefined ? rec.speakerScore : null
                 }))
             });
             return createdAttendance;
@@ -308,6 +316,7 @@ export const getMyAttendance = async (req: Request, res: Response, next: NextFun
             select: {
                 id: true,
                 status: true,
+                speakerScore: true,
                 session: {
                     select: {
                         id: true,

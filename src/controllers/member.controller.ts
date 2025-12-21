@@ -96,6 +96,7 @@ export const getMyAttendance = async (req: Request, res: Response, next: NextFun
             select: {
                 id: true,
                 status: true,
+                speakerScore: true,
                 session: {
                     select: {
                         id: true,

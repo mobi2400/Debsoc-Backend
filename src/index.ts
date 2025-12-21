@@ -6,6 +6,7 @@ import techHeadRoutes from './routes/techHead.routes.js';
 import presidentRoutes from './routes/president.routes.js';
 import cabinetRoutes from './routes/cabinet.routes.js';
 import memberRoutes from './routes/member.routes.js';
+import { startCleanupSchedule } from './lib/cleanup.js';
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  startCleanupSchedule();
 });
 
 process.on('SIGINT', async () => {
