@@ -5,6 +5,7 @@ import {
   verifyCabinet,
   verifyMember,
   getUnverifiedUsers,
+  getVerifiedUsers,
   unverifyPresident,
   unverifyCabinet,
   unverifyMember,
@@ -21,6 +22,7 @@ router.post('/verify/president', authMiddleware, authorizeRoles(['TechHead']), v
 router.post('/verify/cabinet', authMiddleware, authorizeRoles(['TechHead']), verifyCabinet);
 router.post('/verify/member', authMiddleware, authorizeRoles(['TechHead']), verifyMember);
 router.get('/unverified-users', authMiddleware, authorizeRoles(['TechHead']), getUnverifiedUsers);
+router.get('/verified-users', authMiddleware, authorizeRoles(['TechHead']), getVerifiedUsers);
 
 router.post('/unverify/president', authMiddleware, authorizeRoles(['TechHead']), unverifyPresident);
 router.post('/unverify/cabinet', authMiddleware, authorizeRoles(['TechHead']), unverifyCabinet);

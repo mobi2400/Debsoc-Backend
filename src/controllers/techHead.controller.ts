@@ -214,6 +214,34 @@ export const getUnverifiedUsers = async (req: Request, res: Response, next: Next
     next(error);
   }
 };
+
+// Get all verified users
+export const getVerifiedUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const verifiedPresidents = await prisma.president.findMany({
+      where: { isVerified: true },
+      select: { id: true, name: true, email: true, createdAt: true },
+    });
+
+    const verifiedCabinet = await prisma.cabinet.findMany({
+      where: { isVerified: true },
+      select: { id: true, name: true, email: true, position: true, createdAt: true },
+    });
+
+    const verifiedMembers = await prisma.member.findMany({
+      where: { isVerified: true },
+      select: { id: true, name: true, email: true, createdAt: true },
+    });
+
+    res.status(200).json({
+      verifiedPresidents,
+      verifiedCabinet,
+      verifiedMembers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 // Unverify President
 export const unverifyPresident = async (req: Request, res: Response, next: NextFunction) => {
   try {
