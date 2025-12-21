@@ -9,6 +9,9 @@ import {
   unverifyPresident,
   unverifyCabinet,
   unverifyMember,
+  deletePresident,
+  deleteCabinet,
+  deleteMember,
 } from '../controllers/techHead.controller.js';
 import { authMiddleware, authorizeRoles } from '../middleware/auth.middleware.js';
 
@@ -27,5 +30,9 @@ router.get('/verified-users', authMiddleware, authorizeRoles(['TechHead']), getV
 router.post('/unverify/president', authMiddleware, authorizeRoles(['TechHead']), unverifyPresident);
 router.post('/unverify/cabinet', authMiddleware, authorizeRoles(['TechHead']), unverifyCabinet);
 router.post('/unverify/member', authMiddleware, authorizeRoles(['TechHead']), unverifyMember);
+
+router.delete('/delete/president', authMiddleware, authorizeRoles(['TechHead']), deletePresident);
+router.delete('/delete/cabinet', authMiddleware, authorizeRoles(['TechHead']), deleteCabinet);
+router.delete('/delete/member', authMiddleware, authorizeRoles(['TechHead']), deleteMember);
 
 export default router;

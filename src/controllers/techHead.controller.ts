@@ -242,6 +242,40 @@ export const getVerifiedUsers = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+
+// Reject/Delete President
+export const deletePresident = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.body; // Expecting { id: "..." }
+    await prisma.president.delete({ where: { id } });
+    res.status(200).json({ message: 'President removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reject/Delete Cabinet
+export const deleteCabinet = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.body;
+    await prisma.cabinet.delete({ where: { id } });
+    res.status(200).json({ message: 'Cabinet member removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reject/Delete Member
+export const deleteMember = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.body;
+    await prisma.member.delete({ where: { id } });
+    res.status(200).json({ message: 'Member removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
 // Unverify President
 export const unverifyPresident = async (req: Request, res: Response, next: NextFunction) => {
   try {
