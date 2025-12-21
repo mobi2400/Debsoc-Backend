@@ -62,7 +62,8 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
                 id: member.id,
                 name: member.name,
                 type: 'Member',
-                score: totalScore
+                score: totalScore,
+                sessions: member.attendance.length
             });
         }
 
@@ -73,14 +74,21 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
                 id: cab.id,
                 name: cab.name,
                 type: 'Cabinet',
-                score: totalScore
+                score: totalScore,
+                sessions: cab.attendance.length
             });
         }
 
         // Sort by score descending
         leaderboard.sort((a, b) => b.score - a.score);
 
-        res.status(200).json({ leaderboard });
+        // Add rank
+        const rankedLeaderboard = leaderboard.map((entry, index) => ({
+            ...entry,
+            rank: index + 1
+        }));
+
+        res.status(200).json({ leaderboard: rankedLeaderboard });
     } catch (error) {
         next(error);
     }
