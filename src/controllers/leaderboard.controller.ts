@@ -28,7 +28,6 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
                 attendance: {
                     select: { speakerScore: true },
                     where: {
-                        speakerScore: { not: null },
                         status: 'Present',
                         ...dateFilter
                     }
@@ -44,7 +43,6 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
                 attendance: {
                     select: { speakerScore: true },
                     where: {
-                        speakerScore: { not: null },
                         status: 'Present',
                         ...dateFilter
                     }
