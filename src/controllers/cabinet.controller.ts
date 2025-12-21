@@ -133,9 +133,19 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
         // Validate attendance records
         for (let i = 0; i < attendanceData.length; i++) {
             const rec = attendanceData[i];
-            if (!rec.memberId || typeof rec.memberId !== 'string') {
-                return res.status(400).json({ message: `Invalid memberId at index ${i}` });
+
+            // Check if it's a member attendance or cabinet attendance
+            const hasMemberId = rec.memberId && typeof rec.memberId === 'string';
+            const hasCabinetId = rec.cabinetId && typeof rec.cabinetId === 'string';
+
+            if (!hasMemberId && !hasCabinetId) {
+                return res.status(400).json({ message: `Invalid record at index ${i}: Must provide either memberId or cabinetId` });
             }
+
+            if (hasMemberId && hasCabinetId) {
+                return res.status(400).json({ message: `Invalid record at index ${i}: Cannot provide both memberId and cabinetId` });
+            }
+
             if (!rec.status || (rec.status !== 'Present' && rec.status !== 'Absent')) {
                 return res.status(400).json({ message: `Invalid status at index ${i}` });
             }
@@ -148,9 +158,10 @@ export const markAttendance = async (req: Request, res: Response, next: NextFunc
             // await tx.attendance.deleteMany({ where: { sessionId } });
 
             const createdAttendance = await tx.attendance.createMany({
-                data: attendanceData.map((rec: { memberId: string; status: string }) => ({
+                data: attendanceData.map((rec: { memberId?: string; cabinetId?: string; status: string }) => ({
                     sessionId,
-                    memberId: rec.memberId,
+                    memberId: rec.memberId || null,
+                    cabinetId: rec.cabinetId || null,
                     status: rec.status
                 }))
             });
@@ -278,6 +289,43 @@ export const getSentFeedback = async (req: Request, res: Response, next: NextFun
         });
         res.status(200).json({ feedbacks });
     } catch (error) {
+        next(error);
+    }
+};
+
+// Get My Attendance
+export const getMyAttendance = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const cabinetId = req.user?.id;
+        console.log('Fetching attendance for cabinet member:', cabinetId);
+
+        if (!cabinetId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const attendance = await prisma.attendance.findMany({
+            where: { cabinetId },
+            select: {
+                id: true,
+                status: true,
+                session: {
+                    select: {
+                        id: true,
+                        sessionDate: true,
+                        motiontype: true,
+                        Chair: true
+                    }
+                }
+            }
+        });
+
+        // Sort by session date descending in JavaScript
+        // @ts-ignore - sessionDate is available via select
+        attendance.sort((a, b) => new Date(b.session.sessionDate).getTime() - new Date(a.session.sessionDate).getTime());
+
+        res.status(200).json({ attendance });
+    } catch (error) {
+        console.error('Error fetching attendance:', error);
         next(error);
     }
 };
