@@ -7,6 +7,7 @@ import presidentRoutes from './routes/president.routes.js';
 import cabinetRoutes from './routes/cabinet.routes.js';
 import memberRoutes from './routes/member.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
+import applicantRoutes from './routes/applicant.routes.js';
 import { startCleanupSchedule } from './lib/cleanup.js';
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/president', presidentRoutes);
 app.use('/api/cabinet', cabinetRoutes);
 app.use('/api/member', memberRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/applicants', applicantRoutes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Error stack:', err.stack);
