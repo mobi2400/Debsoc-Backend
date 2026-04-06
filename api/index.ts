@@ -7,6 +7,7 @@ import presidentRoutes from '../src/routes/president.routes.js';
 import cabinetRoutes from '../src/routes/cabinet.routes.js';
 import memberRoutes from '../src/routes/member.routes.js';
 import leaderboardRoutes from '../src/routes/leaderboard.routes.js';
+import applicantRoutes from '../src/routes/applicant.routes.js';
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ app.use('/api/president', presidentRoutes);
 app.use('/api/cabinet', cabinetRoutes);
 app.use('/api/member', memberRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/applicants', applicantRoutes);
 
 // Error handling middleware - must be last
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
